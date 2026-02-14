@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "verify:cards": "node scripts/verify-card-assets.mjs"
+    "generate:chips": "node scripts/generate-chip-assets.mjs",
+    "verify:cards": "node scripts/verify-card-assets.mjs",
+    "verify:chips": "node scripts/verify-chip-assets.mjs"
   },
   "dependencies": {
     "react": "^18",

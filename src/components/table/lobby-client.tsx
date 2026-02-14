@@ -4,10 +4,12 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createRoom, joinRoom } from "@/lib/client/api";
 import { setHostToken, setPlayerToken } from "@/lib/client/tokens";
+import { useLanguage } from "@/components/i18n/language-provider";
 import styles from "./lobby-client.module.css";
 
 export function LobbyClient() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [hostName, setHostName] = useState("Host");
   const [smallBlind, setSmallBlind] = useState(10);
   const [bigBlind, setBigBlind] = useState(20);
@@ -29,7 +31,7 @@ export function LobbyClient() {
       setHostToken(created.roomCode, created.hostToken);
       router.push(`/host/${created.roomCode}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Failed to create room");
+      setError(caught instanceof Error ? caught.message : t("lobby.createFailed"));
     } finally {
       setBusy(false);
     }
@@ -45,7 +47,7 @@ export function LobbyClient() {
       setPlayerToken(joined.roomCode, joined.playerToken);
       router.push(`/play/${joined.roomCode}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Failed to join room");
+      setError(caught instanceof Error ? caught.message : t("lobby.joinFailed"));
     } finally {
       setBusy(false);
     }
@@ -53,18 +55,18 @@ export function LobbyClient() {
 
   return (
     <main className={styles.main}>
-      <h1>Social Hold&apos;em</h1>
-      <p className={styles.subtitle}>Create a room for your host console or join from a phone.</p>
+      <h1>{t("lobby.title")}</h1>
+      <p className={styles.subtitle}>{t("lobby.subtitle")}</p>
 
       <section className={styles.grid}>
         <form className={styles.panel} onSubmit={onCreate}>
-          <h2>Create Room (Host)</h2>
+          <h2>{t("lobby.hostPanel")}</h2>
           <label>
-            Host Name
+            {t("lobby.hostName")}
             <input value={hostName} onChange={(event) => setHostName(event.target.value)} required />
           </label>
           <label>
-            Small Blind
+            {t("lobby.smallBlind")}
             <input
               type="number"
               min={1}
@@ -74,7 +76,7 @@ export function LobbyClient() {
             />
           </label>
           <label>
-            Big Blind
+            {t("lobby.bigBlind")}
             <input
               type="number"
               min={2}
@@ -84,14 +86,14 @@ export function LobbyClient() {
             />
           </label>
           <button disabled={busy} type="submit">
-            Create Host Room
+            {t("lobby.createButton")}
           </button>
         </form>
 
         <form className={styles.panel} onSubmit={onJoin}>
-          <h2>Join Room (Player)</h2>
+          <h2>{t("lobby.playerPanel")}</h2>
           <label>
-            Room Code
+            {t("lobby.roomCode")}
             <input
               value={joinCode}
               maxLength={8}
@@ -100,11 +102,11 @@ export function LobbyClient() {
             />
           </label>
           <label>
-            Player Name
+            {t("lobby.playerName")}
             <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} required />
           </label>
           <button disabled={busy} type="submit">
-            Join as Player
+            {t("lobby.joinButton")}
           </button>
         </form>
       </section>

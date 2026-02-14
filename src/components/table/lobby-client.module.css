@@ -2,7 +2,7 @@
   max-width: 980px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 1.5rem 1rem 2rem;
+  padding: calc(1.5rem + var(--lang-switch-reserve)) 1rem 2rem;
   display: grid;
   align-content: start;
   gap: 1rem;

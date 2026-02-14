@@ -56,6 +56,7 @@ export interface PlayerPublicState {
   inHand: boolean;
   folded: boolean;
   allIn: boolean;
+  streetContribution: number;
   contribution: number;
   isDealer: boolean;
   isSmallBlind: boolean;
@@ -74,6 +75,14 @@ export interface HandResult {
   reason: string;
 }
 
+export interface PotBreakdownItem {
+  potId: string;
+  kind: "main" | "side";
+  amount: number;
+  eligiblePlayerIds: string[];
+  level: number;
+}
+
 export interface RoomSnapshot {
   roomCode: string;
   smallBlind: number;
@@ -83,6 +92,8 @@ export interface RoomSnapshot {
   handNo: number;
   street: Street | null;
   pot: number;
+  pots: PotBreakdownItem[];
+  hasSidePot: boolean;
   minRaise: number;
   currentBet: number;
   dealerSeat: number | null;

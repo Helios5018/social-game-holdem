@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { LanguageShell } from "@/components/i18n/language-shell";
 
 export const metadata: Metadata = {
   title: "Hold'em Card Assets",
@@ -12,8 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body>
+        <LanguageShell>{children}</LanguageShell>
+      </body>
     </html>
   );
 }

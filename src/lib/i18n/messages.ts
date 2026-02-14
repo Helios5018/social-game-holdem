@@ -1,0 +1,192 @@
+export type Language = "zh" | "en";
+
+type Dictionary = Record<string, string>;
+
+const en: Dictionary = {
+  "language.switchAria": "Language switch",
+
+  "lobby.title": "Social Hold'em",
+  "lobby.subtitle": "Create a room for your host console or join from a phone.",
+  "lobby.hostPanel": "Create Room (Host)",
+  "lobby.hostName": "Host Name",
+  "lobby.smallBlind": "Small Blind",
+  "lobby.bigBlind": "Big Blind",
+  "lobby.createButton": "Create Host Room",
+  "lobby.playerPanel": "Join Room (Player)",
+  "lobby.roomCode": "Room Code",
+  "lobby.playerName": "Player Name",
+  "lobby.joinButton": "Join as Player",
+  "lobby.createFailed": "Failed to create room",
+  "lobby.joinFailed": "Failed to join room",
+
+  "host.title": "Host Console · {roomCode}",
+  "host.tokenMissing": "Host token is missing in this browser. Create the room from lobby first.",
+  "host.loading": "Loading room...",
+  "host.status": "Status: {status} · Hand #{handNo} · Street: {street}",
+  "host.blinds": "Blinds: {smallBlind}/{bigBlind}",
+  "host.startHand": "Start Hand",
+  "host.startHandFailed": "Failed to start hand",
+  "host.lastResults": "Last Results",
+  "host.actionLog": "Action Log",
+  "host.resultLine": "{reason}: {amount} chips to {winners}",
+
+  "player.title": "Player View · {roomCode}",
+  "player.tokenMissing": "Player token missing. Join this room from the lobby first.",
+  "player.loading": "Loading room state...",
+  "player.header": "Hand #{handNo} · Street: {street}",
+  "player.nickname": "Nickname: {name}",
+  "player.notSeated": "Not Seated",
+  "player.takeSeat": "Take a seat",
+  "player.buyIn": "Buy-in",
+  "player.seat": "Seat {seat}",
+  "player.takeSeatFailed": "Failed to take seat",
+  "player.yourHand": "Your hand",
+  "player.stackLine": "Stack: {stack} · {state}",
+  "player.yourTurn": "Your turn",
+  "player.waiting": "Waiting",
+  "player.actions": "Actions",
+  "player.fold": "Fold",
+  "player.check": "Check",
+  "player.call": "Call {toCall}",
+  "player.bet": "Bet",
+  "player.raise": "Raise",
+  "player.allIn": "All-in",
+  "player.actionFailed": "Action failed",
+
+  "table.dealer": "D",
+  "table.smallBlind": "SB",
+  "table.bigBlind": "BB",
+  "table.folded": "Folded",
+  "table.allIn": "All-in",
+  "table.acting": "Acting",
+  "table.inHand": "In hand",
+  "table.waiting": "Waiting",
+  "table.chips": "{chips} chips",
+  "table.betStreet": "Street: {amount}",
+  "table.betHand": "Hand total: {amount}",
+
+  "pot.total": "Total Pot",
+  "pot.main": "Main Pot",
+  "pot.side": "Side Pot #{index}",
+  "pot.eligible": "Contested by {count} players",
+  "pot.contestedBy": "Contested by {players}",
+  "pot.none": "None",
+  "pot.chipValue": "{value} chip",
+  "pot.expand": "Expand",
+  "pot.collapse": "Collapse",
+  "pot.summaryMainOnly": "Main Pot: {main}",
+  "pot.summaryWithSide": "Main Pot: {main} · Side Pots: {sideCount}",
+};
+
+const zh: Dictionary = {
+  "language.switchAria": "语言切换",
+
+  "lobby.title": "社交德州扑克",
+  "lobby.subtitle": "创建主持房间，或在手机端加入牌桌。",
+  "lobby.hostPanel": "创建房间（主持端）",
+  "lobby.hostName": "主持昵称",
+  "lobby.smallBlind": "小盲注",
+  "lobby.bigBlind": "大盲注",
+  "lobby.createButton": "创建主持房间",
+  "lobby.playerPanel": "加入房间（玩家端）",
+  "lobby.roomCode": "房间码",
+  "lobby.playerName": "玩家昵称",
+  "lobby.joinButton": "作为玩家加入",
+  "lobby.createFailed": "创建房间失败",
+  "lobby.joinFailed": "加入房间失败",
+
+  "host.title": "主持控制台 · {roomCode}",
+  "host.tokenMissing": "当前浏览器缺少主持令牌，请先在大厅创建房间。",
+  "host.loading": "正在加载房间...",
+  "host.status": "状态：{status} · 第 {handNo} 手 · 阶段：{street}",
+  "host.blinds": "盲注：{smallBlind}/{bigBlind}",
+  "host.startHand": "开始一手",
+  "host.startHandFailed": "开局失败",
+  "host.lastResults": "最近结算",
+  "host.actionLog": "操作日志",
+  "host.resultLine": "{reason}：{amount} 筹码给 {winners}",
+
+  "player.title": "玩家视图 · {roomCode}",
+  "player.tokenMissing": "缺少玩家令牌，请先从大厅加入该房间。",
+  "player.loading": "正在加载牌桌状态...",
+  "player.header": "第 {handNo} 手 · 阶段：{street}",
+  "player.nickname": "昵称：{name}",
+  "player.notSeated": "未入座",
+  "player.takeSeat": "选择座位",
+  "player.buyIn": "买入筹码",
+  "player.seat": "座位 {seat}",
+  "player.takeSeatFailed": "入座失败",
+  "player.yourHand": "你的手牌",
+  "player.stackLine": "筹码：{stack} · {state}",
+  "player.yourTurn": "轮到你行动",
+  "player.waiting": "等待中",
+  "player.actions": "行动区",
+  "player.fold": "弃牌",
+  "player.check": "过牌",
+  "player.call": "跟注 {toCall}",
+  "player.bet": "下注",
+  "player.raise": "加注",
+  "player.allIn": "全下",
+  "player.actionFailed": "执行动作失败",
+
+  "table.dealer": "庄",
+  "table.smallBlind": "小盲",
+  "table.bigBlind": "大盲",
+  "table.folded": "已弃牌",
+  "table.allIn": "全下",
+  "table.acting": "行动中",
+  "table.inHand": "在牌局中",
+  "table.waiting": "等待中",
+  "table.chips": "{chips} 筹码",
+  "table.betStreet": "本阶段：{amount}",
+  "table.betHand": "本手累计：{amount}",
+
+  "pot.total": "总底池",
+  "pot.main": "主池",
+  "pot.side": "边池 #{index}",
+  "pot.eligible": "{count} 人可争夺",
+  "pot.contestedBy": "可争夺：{players}",
+  "pot.none": "无",
+  "pot.chipValue": "{value} 面值筹码",
+  "pot.expand": "展开",
+  "pot.collapse": "收起",
+  "pot.summaryMainOnly": "主池：{main}",
+  "pot.summaryWithSide": "主池：{main} · 边池：{sideCount}",
+};
+
+const dictionaries: Record<Language, Dictionary> = { zh, en };
+
+export function resolveLanguage(input: string | null | undefined): Language {
+  return input === "en" ? "en" : "zh";
+}
+
+export function detectLanguage(languages: readonly string[]): Language {
+  for (const item of languages) {
+    const normalized = item.toLowerCase();
+    if (normalized.startsWith("en")) {
+      return "en";
+    }
+    if (normalized.startsWith("zh")) {
+      return "zh";
+    }
+  }
+
+  return "zh";
+}
+
+export function translate(
+  language: Language,
+  key: string,
+  vars?: Record<string, string | number>,
+): string {
+  const table = dictionaries[language] ?? dictionaries.zh;
+  const template = table[key] ?? dictionaries.en[key] ?? key;
+  if (!vars) {
+    return template;
+  }
+
+  return template.replace(/\{(\w+)\}/g, (_, token: string) => {
+    const value = vars[token];
+    return value == null ? "" : String(value);
+  });
+}

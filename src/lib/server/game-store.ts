@@ -6,6 +6,7 @@ import {
   type CardSuit,
   type GameActionCommand,
   type HandResult,
+  type PotBreakdownItem,
   type PlayerPrivateState,
   type PlayerPublicState,
   type RoomSnapshot,
@@ -67,11 +68,6 @@ interface DealOutcome {
   isAllIn: boolean;
 }
 
-interface PotChunk {
-  amount: number;
-  eligible: string[];
-}
-
 const RANKS: CardRank[] = [
   "A",
   "K",
@@ -92,6 +88,7 @@ const TABLE_SEATS = 9;
 const MAX_LOGS = 30;
 const MIN_BUY_IN = 100;
 const MAX_BUY_IN = 20000;
+const BET_STEP = 5;
 
 type HandRank = {
   category: number;
@@ -422,6 +419,40 @@ function remainingPlayers(hand: HandState): string[] {
   return hand.activePlayerIds.filter((playerId) => !hand.folded.has(playerId));
 }
 
+function buildPotBreakdown(
+  contributionsTotal: Record<string, number>,
+  activePlayerIds: string[],
+  folded: Set<string>,
+): PotBreakdownItem[] {
+  const levels = Array.from(new Set(Object.values(contributionsTotal).filter((value) => value > 0))).sort(
+    (a, b) => a - b,
+  );
+
+  const pots: PotBreakdownItem[] = [];
+  let previousLevel = 0;
+
+  for (let index = 0; index < levels.length; index += 1) {
+    const level = levels[index];
+    const contributors = activePlayerIds.filter((playerId) => contributionsTotal[playerId] >= level);
+    const amount = (level - previousLevel) * contributors.length;
+    const eligiblePlayerIds = contributors.filter((playerId) => !folded.has(playerId));
+
+    if (amount > 0 && eligiblePlayerIds.length > 0) {
+      pots.push({
+        potId: index === 0 ? "main-0" : `side-${index}`,
+        kind: index === 0 ? "main" : "side",
+        amount,
+        eligiblePlayerIds,
+        level,
+      });
+    }
+
+    previousLevel = level;
+  }
+
+  return pots;
+}
+
 function isRoundComplete(hand: HandState): boolean {
   const alive = remainingPlayers(hand);
   return alive.every((playerId) => {
@@ -531,27 +562,13 @@ function settleShowdown(room: RoomState): void {
   }
 
   const contributions = hand.contributionsTotal;
-  const levels = Array.from(new Set(Object.values(contributions).filter((value) => value > 0))).sort(
-    (a, b) => a - b,
-  );
+  const potBreakdown = buildPotBreakdown(contributions, hand.activePlayerIds, hand.folded);
 
-  const pots: PotChunk[] = [];
-  let previous = 0;
-  for (const level of levels) {
-    const contributors = hand.activePlayerIds.filter((playerId) => contributions[playerId] >= level);
-    const amount = (level - previous) * contributors.length;
-    const eligible = contributors.filter((playerId) => !hand.folded.has(playerId));
-    if (amount > 0 && eligible.length > 0) {
-      pots.push({ amount, eligible });
-    }
-    previous = level;
-  }
-
-  for (let index = 0; index < pots.length; index += 1) {
-    const pot = pots[index];
+  for (let index = 0; index < potBreakdown.length; index += 1) {
+    const pot = potBreakdown[index];
     let winningRank: HandRank | null = null;
     let winners: string[] = [];
-    for (const playerId of pot.eligible) {
+    for (const playerId of pot.eligiblePlayerIds) {
       const rank = ranksByPlayer.get(playerId);
       if (!rank) {
         continue;
@@ -570,7 +587,7 @@ function settleShowdown(room: RoomState): void {
   }
 
   const winnerSummary = room.results
-    .slice(-pots.length)
+    .slice(-potBreakdown.length)
     .map((result) =>
       result.winnerPlayerIds.map((id) => room.players[id]?.displayName ?? id).join(", "),
     )
@@ -985,6 +1002,9 @@ export class GameStore {
         if (amount <= 0) {
           throw new Error("BET amount is required");
         }
+        if (amount % BET_STEP !== 0) {
+          throw new Error(`BET amount must be a multiple of ${BET_STEP}`);
+        }
 
         const outcome = dealChips(room, hand, playerId, amount);
         const newStreetTotal = hand.contributionsStreet[playerId];
@@ -1013,6 +1033,9 @@ export class GameStore {
 
         if (amount <= toCall) {
           throw new Error(`Raise must be greater than call amount (${toCall})`);
+        }
+        if (amount % BET_STEP !== 0) {
+          throw new Error(`RAISE amount must be a multiple of ${BET_STEP}`);
         }
 
         const outcome = dealChips(room, hand, playerId, amount);
@@ -1106,6 +1129,7 @@ export class GameStore {
           inHand,
           folded: hand ? hand.folded.has(playerId) : false,
           allIn: hand ? hand.allIn.has(playerId) : false,
+          streetContribution: hand ? hand.contributionsStreet[playerId] ?? 0 : 0,
           contribution: hand ? hand.contributionsTotal[playerId] ?? 0 : 0,
           isDealer: room.dealerSeat === seatNo,
           isSmallBlind: hand ? hand.smallBlindSeat === seatNo : false,
@@ -1129,6 +1153,14 @@ export class GameStore {
           }
         : null;
 
+    const potBreakdown =
+      hand != null
+        ? buildPotBreakdown(hand.contributionsTotal, hand.activePlayerIds, hand.folded)
+        : [];
+    const totalPot = hand
+      ? Object.values(hand.contributionsTotal).reduce((sum, value) => sum + value, 0)
+      : 0;
+
     return {
       roomCode: room.roomCode,
       smallBlind: room.smallBlind,
@@ -1137,9 +1169,9 @@ export class GameStore {
       version: room.version,
       handNo: room.handNo,
       street: hand?.street ?? null,
-      pot: hand
-        ? Object.values(hand.contributionsTotal).reduce((sum, value) => sum + value, 0)
-        : 0,
+      pot: totalPot,
+      pots: potBreakdown,
+      hasSidePot: potBreakdown.some((item) => item.kind === "side"),
       minRaise: hand?.minRaise ?? room.bigBlind,
       currentBet: hand?.currentBet ?? 0,
       dealerSeat: room.dealerSeat,

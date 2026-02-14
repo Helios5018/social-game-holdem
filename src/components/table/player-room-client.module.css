@@ -2,7 +2,7 @@
   max-width: 980px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 1rem;
+  padding: calc(1rem + var(--lang-switch-reserve)) 1rem 1rem;
   display: grid;
   align-content: start;
   gap: 0.9rem;
@@ -15,13 +15,39 @@
   padding: 0.85rem;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
 .header h1 {
   font-size: 1.24rem;
+}
+
+.identityBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.22rem 0.58rem;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.44);
+  background: rgba(55, 45, 8, 0.42);
+  color: #fde68a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .header p {
   color: var(--text-muted);
   font-size: 0.84rem;
+  margin-top: 0.3rem;
 }
 
 .panel {

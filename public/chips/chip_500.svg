@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="500 chip">
+  <defs>
+    <radialGradient id="core" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="100%" stop-color="#7e22ce" />
+    </radialGradient>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="#6b21a8" stroke="#e9d5ff" stroke-width="2" />
+  <circle cx="60" cy="60" r="45" fill="url(#core)" stroke="#e9d5ff" stroke-width="2" />
+  <circle cx="60" cy="60" r="31" fill="none" stroke="#e9d5ff" stroke-width="1.5" opacity="0.95" />
+  <g fill="#e9d5ff">
+    <rect x="56" y="6" width="8" height="12" rx="2" />
+    <rect x="56" y="102" width="8" height="12" rx="2" />
+    <rect x="102" y="56" width="12" height="8" rx="2" />
+    <rect x="6" y="56" width="12" height="8" rx="2" />
+    <rect x="21" y="21" width="10" height="8" rx="2" transform="rotate(-45 26 25)" />
+    <rect x="89" y="89" width="10" height="8" rx="2" transform="rotate(-45 94 93)" />
+    <rect x="89" y="21" width="10" height="8" rx="2" transform="rotate(45 94 25)" />
+    <rect x="21" y="89" width="10" height="8" rx="2" transform="rotate(45 26 93)" />
+  </g>
+  <text
+    x="60"
+    y="67"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    fill="#faf5ff"
+    font-family="'Trebuchet MS','Segoe UI',sans-serif"
+    font-size="30"
+    font-weight="800"
+  >
+    500
+  </text>
+</svg>

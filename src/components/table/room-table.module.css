@@ -45,9 +45,23 @@
   gap: 0.4rem;
 }
 
+.nameWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .name {
   font-size: 0.88rem;
   font-weight: 700;
+}
+
+.dealerDot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  border: 2px solid rgba(250, 204, 21, 0.95);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.24);
 }
 
 .meta {
@@ -65,6 +79,54 @@
 .stack {
   font-size: 0.82rem;
   margin-top: 0.2rem;
+}
+
+.betRow {
+  margin-top: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.betText {
+  font-size: 0.76rem;
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.betChips {
+  display: inline-flex;
+  align-items: flex-end;
+  min-height: 0.95rem;
+}
+
+.betChip {
+  width: 14px;
+  height: 14px;
+  margin-left: -4px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.26));
+}
+
+.betChip:first-child {
+  margin-left: 0;
+}
+
+.betOverflow {
+  margin-left: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.betNone {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.betSecondary {
+  margin-top: 0.08rem;
+  font-size: 0.7rem;
+  color: color-mix(in srgb, var(--text-muted), transparent 8%);
 }
 
 .state {

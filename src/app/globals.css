@@ -9,6 +9,7 @@
   --surface-2: #06231d;
   --text-main: #effcf9;
   --text-muted: #b3ddd4;
+  --lang-switch-reserve: 3.15rem;
 }
 
 * {
@@ -35,4 +36,52 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.languageSwitch {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 0.7rem);
+  right: calc(env(safe-area-inset-right) + 0.7rem);
+  z-index: 50;
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.24rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(157, 253, 236, 0.34);
+  background: rgba(1, 22, 18, 0.86);
+  backdrop-filter: blur(8px);
+}
+
+.languageSwitch button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 0.68rem;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+
+.languageSwitch button.active {
+  background: linear-gradient(120deg, #22d3ee, #2dd4bf);
+  color: #032321;
+}
+
+.languageSwitch button:focus-visible {
+  outline: none;
+  border-color: rgba(251, 191, 36, 0.88);
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3);
+}
+
+.languageSwitch button:hover {
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .languageSwitch button {
+    transition: none;
+  }
 }

@@ -1,0 +1,242 @@
+.wrapper {
+  justify-self: center;
+  width: min(100%, 680px);
+  border: 1px solid rgba(157, 253, 236, 0.22);
+  border-radius: 0.95rem;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(251, 191, 36, 0.12), transparent 52%),
+    rgba(2, 23, 20, 0.84);
+  padding: 0.62rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.settling {
+  animation: settleOut 220ms ease-in-out;
+}
+
+.totalCard {
+  border: 1px solid rgba(251, 191, 36, 0.44);
+  border-radius: 0.8rem;
+  background: linear-gradient(145deg, rgba(15, 33, 29, 0.96), rgba(7, 20, 18, 0.9));
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 64px;
+  padding: 0.55rem 0.66rem;
+  animation: totalPulse 240ms ease-out;
+}
+
+.totalLabel {
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.totalAmount {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fef3c7;
+}
+
+.chipStack {
+  justify-self: end;
+  display: flex;
+  align-items: flex-end;
+  min-height: 28px;
+  position: relative;
+}
+
+.chip {
+  width: 24px;
+  height: 24px;
+  margin-left: -6px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  animation: chipRise 220ms ease-out;
+}
+
+.chip:first-child {
+  margin-left: 0;
+}
+
+.overflowBadge {
+  margin-left: 0.36rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.emptyChip {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.toggle {
+  border: 1px solid rgba(157, 253, 236, 0.22);
+  border-radius: 0.74rem;
+  background: rgba(4, 25, 21, 0.76);
+  color: var(--text-main);
+  width: 100%;
+  min-height: 42px;
+  padding: 0.42rem 0.58rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.toggle:hover {
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.toggleSummary {
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toggleMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  font-size: 0.74rem;
+  color: #fde68a;
+  white-space: nowrap;
+}
+
+.chevron {
+  display: inline-block;
+  transform: rotate(0deg);
+  transition: transform 160ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.breakdown {
+  display: grid;
+  gap: 0.4rem;
+  animation: sideReveal 190ms ease-out;
+}
+
+.potRow {
+  border: 1px solid rgba(157, 253, 236, 0.2);
+  border-radius: 0.7rem;
+  background: rgba(3, 22, 19, 0.68);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.56rem;
+  padding: 0.42rem 0.56rem;
+}
+
+.sideRow {
+  border-color: rgba(251, 191, 36, 0.32);
+  animation: sideReveal 220ms ease-out;
+}
+
+.potMeta {
+  min-width: 0;
+  display: grid;
+  gap: 0.14rem;
+}
+
+.potTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.potEligible {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.potAmount {
+  font-size: 0.9rem;
+  color: #fde68a;
+}
+
+@keyframes totalPulse {
+  0% {
+    transform: translateY(1px) scale(0.996);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes chipRise {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes sideReveal {
+  0% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes settleOut {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.4;
+  }
+}
+
+@media (max-width: 640px) {
+  .wrapper {
+    width: 100%;
+  }
+
+  .totalCard {
+    grid-template-columns: auto 1fr;
+    gap: 0.35rem;
+  }
+
+  .chipStack {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settling,
+  .totalCard,
+  .chip,
+  .sideRow,
+  .breakdown {
+    animation: none;
+  }
+
+  .chevron {
+    transition: none;
+  }
+}
