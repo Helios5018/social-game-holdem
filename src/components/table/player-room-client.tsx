@@ -8,6 +8,7 @@ import { PlayingCard } from "@/components/game/playing-card";
 import type { GameActionType } from "@/lib/protocol/types";
 import { useLanguage } from "@/components/i18n/language-provider";
 import { RoomTable } from "./room-table";
+import { ShowdownPanel } from "./showdown-panel";
 import styles from "./player-room-client.module.css";
 
 interface PlayerRoomClientProps {
@@ -276,6 +277,12 @@ export function PlayerRoomClient({ roomCode }: PlayerRoomClientProps) {
         yourPlayerId={snapshot.yourPlayerId}
         showEligibleNames={false}
       />
+
+      {snapshot.lastShowdown ? (
+        <section className={styles.panel}>
+          <ShowdownPanel detail={snapshot.lastShowdown} />
+        </section>
+      ) : null}
 
       {!mySeat ? (
         <section className={styles.panel}>

@@ -84,6 +84,10 @@ const en: Dictionary = {
   "pot.collapse": "Collapse",
   "pot.summaryMainOnly": "Main Pot: {main}",
   "pot.summaryWithSide": "Main Pot: {main} · Side Pots: {sideCount}",
+  "showdown.title": "Showdown · Hand #{handNo}",
+  "showdown.board": "Board",
+  "showdown.hand": "Hand",
+  "showdown.winner": "Winner",
 };
 
 const zh: Dictionary = {
@@ -168,6 +172,10 @@ const zh: Dictionary = {
   "pot.collapse": "收起",
   "pot.summaryMainOnly": "主池：{main}",
   "pot.summaryWithSide": "主池：{main} · 边池：{sideCount}",
+  "showdown.title": "摊牌详情 · 第 {handNo} 手",
+  "showdown.board": "公共牌",
+  "showdown.hand": "牌型",
+  "showdown.winner": "赢家",
 };
 
 const dictionaries: Record<Language, Dictionary> = { zh, en };

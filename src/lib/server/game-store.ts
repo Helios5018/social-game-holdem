@@ -10,6 +10,7 @@ import {
   type PlayerPrivateState,
   type PlayerPublicState,
   type RoomSnapshot,
+  type ShowdownDetail,
   type Street,
 } from "@/lib/protocol/types";
 import { createToken, type AuthRole, type TokenPayload, verifyToken } from "./auth";
@@ -56,6 +57,7 @@ interface RoomState {
   version: number;
   actionLog: string[];
   results: HandResult[];
+  lastShowdown: ShowdownDetail | null;
 }
 
 interface DecodedIdentity {
@@ -536,6 +538,7 @@ function settleShowdown(room: RoomState): void {
     const only = alive[0];
     const total = Object.values(hand.contributionsTotal).reduce((sum, value) => sum + value, 0);
     distributePot(room, hand, [only], total, "All opponents folded");
+    room.lastShowdown = null;
     addLog(room, `${room.players[only].displayName} won ${total} chips (folds).`);
     room.status = "waiting";
     hand.street = "settled";
@@ -554,6 +557,7 @@ function settleShowdown(room: RoomState): void {
 
   const contributions = hand.contributionsTotal;
   const potBreakdown = buildPotBreakdown(contributions, hand.activePlayerIds, hand.folded);
+  const resultsStart = room.results.length;
 
   for (let index = 0; index < potBreakdown.length; index += 1) {
     const pot = potBreakdown[index];
@@ -576,6 +580,23 @@ function settleShowdown(room: RoomState): void {
     const reason = winningRank ? `Pot ${index + 1}: ${winningRank.label}` : `Pot ${index + 1}`;
     distributePot(room, hand, winners, pot.amount, reason);
   }
+
+  const showdownResults = room.results.slice(resultsStart);
+  const winners = new Set(showdownResults.flatMap((result) => result.winnerPlayerIds));
+  const orderedAlive = alive
+    .slice()
+    .sort((left, right) => getSeatByPlayer(room, left) - getSeatByPlayer(room, right));
+  room.lastShowdown = {
+    handNo: hand.handNo,
+    communityCards: hand.communityCards.slice(),
+    players: orderedAlive.map((playerId) => ({
+      playerId,
+      displayName: room.players[playerId]?.displayName ?? playerId,
+      holeCards: [...hand.holeCards[playerId]],
+      handLabel: ranksByPlayer.get(playerId)?.label ?? "Unknown",
+      isWinner: winners.has(playerId),
+    })),
+  };
 
   const winnerSummary = room.results
     .slice(-potBreakdown.length)
@@ -720,6 +741,7 @@ export class GameStore {
       version: 1,
       actionLog: [],
       results: [],
+      lastShowdown: null,
     };
 
     this.rooms.set(roomCode, room);
@@ -865,6 +887,7 @@ export class GameStore {
     }
 
     room.results = [];
+    room.lastShowdown = null;
 
     const contenders = seatedWithChips(room);
     if (contenders.length < 2) {
@@ -1205,6 +1228,7 @@ export class GameStore {
       players,
       actionLog: room.actionLog,
       results: room.results,
+      lastShowdown: room.lastShowdown,
       yourPlayerId: viewerId,
       yourPrivateState: privateState,
     };

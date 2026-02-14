@@ -75,6 +75,20 @@ export interface HandResult {
   reason: string;
 }
 
+export interface ShowdownPlayerDetail {
+  playerId: string;
+  displayName: string;
+  holeCards: Card[];
+  handLabel: string;
+  isWinner: boolean;
+}
+
+export interface ShowdownDetail {
+  handNo: number;
+  communityCards: Card[];
+  players: ShowdownPlayerDetail[];
+}
+
 export interface PotBreakdownItem {
   potId: string;
   kind: "main" | "side";
@@ -101,6 +115,7 @@ export interface RoomSnapshot {
   players: PlayerPublicState[];
   actionLog: string[];
   results: HandResult[];
+  lastShowdown: ShowdownDetail | null;
   yourPlayerId: string | null;
   yourPrivateState: PlayerPrivateState | null;
 }

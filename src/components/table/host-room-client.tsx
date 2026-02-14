@@ -6,6 +6,7 @@ import { getHostToken } from "@/lib/client/tokens";
 import { useRoomSnapshot } from "@/lib/client/use-room-snapshot";
 import { useLanguage } from "@/components/i18n/language-provider";
 import { RoomTable } from "./room-table";
+import { ShowdownPanel } from "./showdown-panel";
 import styles from "./host-room-client.module.css";
 
 interface HostRoomClientProps {
@@ -191,6 +192,12 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
         highlightPlayerId={snapshot.players.find((player) => player.isTurn)?.playerId ?? null}
         showEligibleNames
       />
+
+      {snapshot.lastShowdown ? (
+        <section className={styles.panel}>
+          <ShowdownPanel detail={snapshot.lastShowdown} />
+        </section>
+      ) : null}
 
       {snapshot.results.length > 0 ? (
         <section className={styles.panel}>

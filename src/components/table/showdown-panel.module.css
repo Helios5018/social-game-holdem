@@ -1,0 +1,75 @@
+.wrapper {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.header h2 {
+  font-size: 1rem;
+}
+
+.boardBlock {
+  border: 1px solid rgba(157, 253, 236, 0.2);
+  border-radius: 0.78rem;
+  background: rgba(2, 22, 20, 0.72);
+  padding: 0.55rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.cardsRow {
+  display: flex;
+  gap: 0.42rem;
+  flex-wrap: wrap;
+}
+
+.playerGrid {
+  display: grid;
+  gap: 0.52rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.playerCard {
+  border: 1px solid rgba(157, 253, 236, 0.2);
+  border-radius: 0.78rem;
+  background: rgba(2, 22, 20, 0.7);
+  padding: 0.55rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.winner {
+  border-color: rgba(251, 191, 36, 0.72);
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.22);
+}
+
+.playerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.playerName {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.winnerTag {
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.65);
+  background: rgba(71, 57, 11, 0.42);
+  color: #fef08a;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.handLabel {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
