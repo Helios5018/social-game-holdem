@@ -1,0 +1,135 @@
+.panel {
+  border: 1px solid rgba(157, 253, 236, 0.24);
+  border-radius: 0.95rem;
+  padding: 0.8rem;
+  background: rgba(2, 20, 18, 0.84);
+  display: grid;
+  gap: 0.55rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.header h2 {
+  font-size: 1rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.toggle input {
+  accent-color: #2dd4bf;
+}
+
+.list {
+  max-height: 250px;
+  overflow: auto;
+  border: 1px solid rgba(157, 253, 236, 0.2);
+  border-radius: 0.78rem;
+  background: rgba(1, 16, 14, 0.8);
+  padding: 0.45rem;
+  display: grid;
+  gap: 0.38rem;
+}
+
+.item {
+  border: 1px solid rgba(157, 253, 236, 0.15);
+  border-radius: 0.66rem;
+  padding: 0.44rem 0.5rem;
+  background: rgba(3, 24, 21, 0.74);
+  display: grid;
+  gap: 0.2rem;
+}
+
+.itemTop {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.level {
+  border-radius: 999px;
+  padding: 0.12rem 0.42rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+}
+
+.levelInfo {
+  color: #d1fae5;
+  background: rgba(16, 185, 129, 0.22);
+}
+
+.levelWarn {
+  color: #fef3c7;
+  background: rgba(245, 158, 11, 0.24);
+}
+
+.levelError {
+  color: #fee2e2;
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.levelDebug {
+  color: #dbeafe;
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.scope {
+  font-size: 0.68rem;
+  color: #67e8f9;
+  background: rgba(6, 95, 70, 0.35);
+  border-radius: 999px;
+  padding: 0.12rem 0.44rem;
+}
+
+.time {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.message {
+  color: var(--text-main);
+  font-size: 0.82rem;
+}
+
+.detail {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  word-break: break-word;
+}
+
+.meta {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.error {
+  color: #fda4af;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 760px) {
+  .time {
+    margin-left: 0;
+  }
+}

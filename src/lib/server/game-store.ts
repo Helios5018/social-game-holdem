@@ -14,6 +14,7 @@ import {
   type Street,
 } from "@/lib/protocol/types";
 import { createToken, type AuthRole, type TokenPayload, verifyToken } from "./auth";
+import { logServer } from "./logger";
 
 interface RoomPlayer {
   playerId: string;
@@ -90,6 +91,9 @@ const TABLE_SEATS = 9;
 const MAX_LOGS = 30;
 const BET_STEP = 5;
 const RECHARGE_STEP = 5;
+const ROOM_CODE_LENGTH = 4;
+const ROOM_CODE_SPACE = 10 ** ROOM_CODE_LENGTH;
+const ROOM_CODE_PATTERN = /^\d{4}$/;
 
 type HandRank = {
   category: number;
@@ -121,7 +125,16 @@ function rankToValue(rank: CardRank): number {
 }
 
 function generateRoomCode(): string {
-  return crypto.randomBytes(3).toString("hex").toUpperCase();
+  const value = crypto.randomInt(0, ROOM_CODE_SPACE);
+  return String(value).padStart(ROOM_CODE_LENGTH, "0");
+}
+
+function normalizeRoomCode(roomCode: string): string {
+  const normalized = roomCode.trim();
+  if (!ROOM_CODE_PATTERN.test(normalized)) {
+    throw new Error("Room code must be 4 digits");
+  }
+  return normalized;
 }
 
 function shuffleDeck(deck: Card[]): Card[] {
@@ -304,6 +317,23 @@ function evaluateSeven(cards: Card[]): HandRank {
 
 function addLog(room: RoomState, line: string): void {
   room.actionLog = [`${new Date().toISOString()} ${line}`, ...room.actionLog].slice(0, MAX_LOGS);
+}
+
+function logGameEvent(
+  room: RoomState,
+  level: "info" | "warn" | "error",
+  event: string,
+  message: string,
+  meta?: Record<string, string | number | boolean | null | undefined>,
+): void {
+  logServer({
+    level,
+    scope: "game",
+    roomCode: room.roomCode,
+    event,
+    message,
+    meta,
+  });
 }
 
 function nextSeatFrom(
@@ -493,6 +523,11 @@ function revealNextStreet(room: RoomState): void {
   }
 
   addLog(room, `Street moved to ${hand.street}.`);
+  logGameEvent(room, "info", "street_advanced", `Street moved to ${hand.street}.`, {
+    handNo: hand.handNo,
+    street: hand.street,
+    communityCount: hand.communityCards.length,
+  });
 }
 
 function distributePot(room: RoomState, hand: HandState, winners: string[], amount: number, reason: string): void {
@@ -540,6 +575,12 @@ function settleShowdown(room: RoomState): void {
     distributePot(room, hand, [only], total, "All opponents folded");
     room.lastShowdown = null;
     addLog(room, `${room.players[only].displayName} won ${total} chips (folds).`);
+    logGameEvent(room, "info", "showdown_settled", "Hand settled by folds.", {
+      handNo: hand.handNo,
+      winnerPlayerId: only,
+      winnerName: room.players[only]?.displayName ?? only,
+      amount: total,
+    });
     room.status = "waiting";
     hand.street = "settled";
     room.hand = null;
@@ -606,6 +647,12 @@ function settleShowdown(room: RoomState): void {
     .join(" | ");
 
   addLog(room, `Showdown settled: ${winnerSummary}.`);
+  logGameEvent(room, "info", "showdown_settled", "Showdown settled.", {
+    handNo: hand.handNo,
+    winners: winnerSummary,
+    pots: potBreakdown.length,
+    totalPot: Object.values(contributions).reduce((sum, value) => sum + value, 0),
+  });
   hand.street = "settled";
   room.hand = null;
   room.status = "waiting";
@@ -708,6 +755,10 @@ export class GameStore {
     const safeSmall = Math.max(1, Math.floor(smallBlind));
     const safeBig = Math.max(safeSmall * 2, Math.floor(bigBlind));
 
+    if (this.rooms.size >= ROOM_CODE_SPACE) {
+      throw new Error("Room capacity reached");
+    }
+
     let roomCode = generateRoomCode();
     while (this.rooms.has(roomCode)) {
       roomCode = generateRoomCode();
@@ -746,6 +797,12 @@ export class GameStore {
 
     this.rooms.set(roomCode, room);
     addLog(room, `Room created by ${hostPlayer.displayName}.`);
+    logGameEvent(room, "info", "room_created", "Room created.", {
+      hostPlayerId,
+      hostName: hostPlayer.displayName,
+      smallBlind: safeSmall,
+      bigBlind: safeBig,
+    });
 
     const hostToken = createToken({
       roomCode,
@@ -762,7 +819,8 @@ export class GameStore {
     playerToken: string;
     availableSeats: number[];
   } {
-    const room = this.rooms.get(roomCode);
+    const normalizedRoomCode = normalizeRoomCode(roomCode);
+    const room = this.rooms.get(normalizedRoomCode);
     if (!room) {
       throw new Error("Room not found");
     }
@@ -792,9 +850,14 @@ export class GameStore {
 
     room.version += 1;
     addLog(room, `${displayName} joined room.`);
+    logGameEvent(room, "info", "player_joined", "Player joined room.", {
+      playerId,
+      playerName: displayName,
+      connectedPlayers: Object.keys(room.players).length,
+    });
 
     const playerToken = createToken({
-      roomCode,
+      roomCode: normalizedRoomCode,
       role: "player",
       playerId,
       iat: now(),
@@ -803,7 +866,7 @@ export class GameStore {
     return {
       playerId,
       playerToken,
-      availableSeats: this.getAvailableSeats(roomCode),
+      availableSeats: this.getAvailableSeats(normalizedRoomCode),
     };
   }
 
@@ -838,6 +901,11 @@ export class GameStore {
     room.version += 1;
 
     addLog(room, `${player.displayName} sat at seat ${seatNo + 1}.`);
+    logGameEvent(room, "info", "player_seated", "Player seated.", {
+      playerId,
+      playerName: player.displayName,
+      seatNo: seatNo + 1,
+    });
   }
 
   rechargePlayer(roomCode: string, token: string, targetPlayerId: string, amount: number): void {
@@ -869,6 +937,13 @@ export class GameStore {
     target.stack += rechargeAmount;
     room.version += 1;
     addLog(room, `${target.displayName} recharged +${rechargeAmount} chips.`);
+    logGameEvent(room, "info", "recharge_applied", "Host recharged player chips.", {
+      hostPlayerId: identity.payload.playerId ?? null,
+      targetPlayerId,
+      targetName: target.displayName,
+      amount: rechargeAmount,
+      nextStack: target.stack,
+    });
   }
 
   startHand(roomCode: string, token: string): void {
@@ -883,6 +958,10 @@ export class GameStore {
     const seatedPlayerIds = room.seats.filter((playerId): playerId is string => Boolean(playerId));
     const invalidSeated = seatedPlayerIds.filter((playerId) => (room.players[playerId]?.stack ?? 0) <= 0);
     if (invalidSeated.length > 0) {
+      logGameEvent(room, "warn", "start_hand_blocked", "Start hand blocked by zero-stack seated player.", {
+        invalidCount: invalidSeated.length,
+        invalidPlayerIds: invalidSeated.join(","),
+      });
       throw new Error("All seated players must have chips before starting a hand");
     }
 
@@ -891,6 +970,9 @@ export class GameStore {
 
     const contenders = seatedWithChips(room);
     if (contenders.length < 2) {
+      logGameEvent(room, "warn", "start_hand_blocked", "Start hand blocked by insufficient contenders.", {
+        contenderCount: contenders.length,
+      });
       throw new Error("At least two seated players with chips are required");
     }
 
@@ -980,6 +1062,15 @@ export class GameStore {
       room,
       `Hand #${hand.handNo} started. Dealer S${dealerSeat + 1}, SB ${room.players[sbPlayerId].displayName}, BB ${room.players[bbPlayerId].displayName}.`,
     );
+    logGameEvent(room, "info", "hand_started", "Hand started.", {
+      handNo: hand.handNo,
+      dealerSeat: dealerSeat + 1,
+      sbSeat: sbSeat + 1,
+      bbSeat: bbSeat + 1,
+      sbPlayerId,
+      bbPlayerId,
+      contenderCount: contenders.length,
+    });
 
     if (!hand.toActPlayerId) {
       runOutToRiver(room);
@@ -1140,6 +1231,18 @@ export class GameStore {
         throw new Error("Unsupported action");
     }
 
+    logGameEvent(room, "info", "action_applied", "Player action applied.", {
+      handNo: hand.handNo,
+      street: hand.street,
+      playerId,
+      playerName: player.displayName,
+      actionType: command.type,
+      requestedAmount: command.amount ?? null,
+      toCall,
+      currentBet: hand.currentBet,
+      stackAfter: player.stack,
+    });
+
     room.version += 1;
     progressAfterAction(room, playerId);
   }
@@ -1286,7 +1389,8 @@ export class GameStore {
   }
 
   private getRoom(roomCode: string): RoomState {
-    const room = this.rooms.get(roomCode);
+    const normalizedRoomCode = normalizeRoomCode(roomCode);
+    const room = this.rooms.get(normalizedRoomCode);
     if (!room) {
       throw new Error("Room not found");
     }

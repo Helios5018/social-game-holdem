@@ -18,6 +18,8 @@ export function LobbyClient() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const normalizeJoinCodeInput = (value: string): string => value.replace(/\D/g, "").slice(0, 4);
+
   const onCreate = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -42,7 +44,10 @@ export function LobbyClient() {
     setBusy(true);
     setError(null);
     try {
-      const code = joinCode.trim().toUpperCase();
+      const code = normalizeJoinCodeInput(joinCode.trim());
+      if (code.length !== 4) {
+        throw new Error("Room code must be 4 digits");
+      }
       const joined = await joinRoom(code, playerName);
       setPlayerToken(joined.roomCode, joined.playerToken);
       router.push(`/play/${joined.roomCode}`);
@@ -96,8 +101,10 @@ export function LobbyClient() {
             {t("lobby.roomCode")}
             <input
               value={joinCode}
-              maxLength={8}
-              onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+              inputMode="numeric"
+              maxLength={4}
+              pattern="[0-9]{4}"
+              onChange={(event) => setJoinCode(normalizeJoinCodeInput(event.target.value))}
               required
             />
           </label>

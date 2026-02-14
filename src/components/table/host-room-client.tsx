@@ -6,6 +6,7 @@ import { getHostToken } from "@/lib/client/tokens";
 import { useRoomSnapshot } from "@/lib/client/use-room-snapshot";
 import { useLanguage } from "@/components/i18n/language-provider";
 import { RoomTable } from "./room-table";
+import { HostSystemLogPanel } from "./host-system-log-panel";
 import { ShowdownPanel } from "./showdown-panel";
 import styles from "./host-room-client.module.css";
 
@@ -265,6 +266,8 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
 
         {rechargeFeedback ? <p className={styles.success}>{rechargeFeedback}</p> : null}
       </section>
+
+      <HostSystemLogPanel roomCode={snapshot.roomCode} token={token} />
 
       <section className={styles.panel}>
         <h2>{t("host.actionLog")}</h2>

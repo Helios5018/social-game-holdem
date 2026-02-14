@@ -170,3 +170,25 @@ export interface PlayerActionRequest {
   token: string;
   command: GameActionCommand;
 }
+
+export type ServerLogLevel = "debug" | "info" | "warn" | "error";
+
+export type ServerLogScope = "api" | "game" | "auth" | "system";
+
+export interface ServerLogEntry {
+  id: string;
+  ts: string;
+  level: ServerLogLevel;
+  scope: ServerLogScope;
+  roomCode?: string;
+  event: string;
+  message: string;
+  requestId?: string;
+  meta?: Record<string, string | number | boolean | null>;
+}
+
+export interface HostLogsResponse {
+  items: ServerLogEntry[];
+  nextCursor: string | null;
+  allowDebug?: boolean;
+}

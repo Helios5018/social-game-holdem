@@ -2,6 +2,7 @@ import type {
   BasicOkResponse,
   CreateRoomResponse,
   GameActionCommand,
+  HostLogsResponse,
   JoinRoomResponse,
   RechargePlayerRequest,
   RoomSnapshot,
@@ -96,4 +97,31 @@ export async function fetchSnapshot(roomCode: string, token?: string): Promise<R
   });
 
   return parseResponse<RoomSnapshot>(response);
+}
+
+export async function fetchHostLogs(input: {
+  roomCode: string;
+  token: string;
+  since?: string;
+  limit?: number;
+  includeDebug?: boolean;
+}): Promise<HostLogsResponse> {
+  const params = new URLSearchParams({
+    token: input.token,
+  });
+  if (input.since) {
+    params.set("since", input.since);
+  }
+  if (input.limit != null) {
+    params.set("limit", String(input.limit));
+  }
+  if (input.includeDebug) {
+    params.set("includeDebug", "true");
+  }
+
+  const response = await fetch(`/api/v1/rooms/${input.roomCode}/host/logs?${params.toString()}`, {
+    cache: "no-store",
+  });
+
+  return parseResponse<HostLogsResponse>(response);
 }
