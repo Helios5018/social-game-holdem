@@ -1,0 +1,106 @@
+.main {
+  max-width: 980px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1rem;
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.header {
+  border: 1px solid rgba(157, 253, 236, 0.24);
+  border-radius: 0.95rem;
+  background: rgba(3, 28, 22, 0.82);
+  padding: 0.85rem;
+}
+
+.header h1 {
+  font-size: 1.24rem;
+}
+
+.header p {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.panel {
+  border: 1px solid rgba(157, 253, 236, 0.22);
+  border-radius: 0.95rem;
+  background: rgba(2, 23, 18, 0.82);
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.panel h2 {
+  font-size: 1rem;
+}
+
+.meta {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.handCards {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.actionRow {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.actionRow:first-of-type {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.actionRow button,
+.seatButtons button {
+  border: none;
+  border-radius: 0.62rem;
+  background: linear-gradient(120deg, #22d3ee, #2dd4bf);
+  color: #032321;
+  font-weight: 700;
+  min-height: 46px;
+  padding: 0.45rem;
+}
+
+.actionRow button:disabled,
+.seatButtons button:disabled {
+  opacity: 0.48;
+}
+
+.actionRow input,
+.panel input {
+  border-radius: 0.62rem;
+  border: 1px solid rgba(157, 253, 236, 0.32);
+  background: rgba(3, 24, 19, 0.9);
+  color: var(--text-main);
+  min-height: 46px;
+  padding: 0.45rem 0.55rem;
+}
+
+.seatButtons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.error {
+  color: #fda4af;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .actionRow,
+  .seatButtons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .actionRow:first-of-type {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

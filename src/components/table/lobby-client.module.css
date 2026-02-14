@@ -1,0 +1,73 @@
+.main {
+  max-width: 980px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2rem;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.main h1 {
+  font-size: 2rem;
+  letter-spacing: 0.01em;
+}
+
+.subtitle {
+  color: var(--text-muted);
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.panel {
+  border-radius: 1rem;
+  border: 1px solid rgba(157, 253, 236, 0.28);
+  background: rgba(3, 29, 24, 0.8);
+  padding: 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.panel h2 {
+  font-size: 1.1rem;
+}
+
+.panel label {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.panel input {
+  border-radius: 0.6rem;
+  border: 1px solid rgba(157, 253, 236, 0.35);
+  background: rgba(2, 22, 18, 0.85);
+  color: var(--text-main);
+  padding: 0.55rem 0.65rem;
+}
+
+.panel button {
+  margin-top: 0.35rem;
+  border: none;
+  border-radius: 0.65rem;
+  background: linear-gradient(120deg, #22d3ee, #2dd4bf);
+  color: #042120;
+  font-weight: 700;
+  padding: 0.62rem;
+  cursor: pointer;
+}
+
+.panel button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.error {
+  color: #fda4af;
+  font-size: 0.92rem;
+}

@@ -1,0 +1,74 @@
+.table {
+  border: 1px solid rgba(157, 253, 236, 0.22);
+  border-radius: 1rem;
+  padding: 0.9rem;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(56, 189, 155, 0.2), transparent 58%),
+    rgba(2, 29, 24, 0.86);
+  display: grid;
+  gap: 0.9rem;
+}
+
+.boardRow {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.seatGrid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+}
+
+.seatCard {
+  border: 1px solid rgba(157, 253, 236, 0.18);
+  border-radius: 0.75rem;
+  padding: 0.55rem;
+  background: rgba(2, 25, 20, 0.72);
+}
+
+.active {
+  border-color: rgba(251, 191, 36, 0.8);
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.3);
+}
+
+.me {
+  border-color: rgba(34, 211, 238, 0.8);
+}
+
+.seatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.name {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.tags {
+  min-height: 1.1rem;
+  color: #9dfdec;
+  font-size: 0.74rem;
+  margin-top: 0.2rem;
+}
+
+.stack {
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
+.state {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}

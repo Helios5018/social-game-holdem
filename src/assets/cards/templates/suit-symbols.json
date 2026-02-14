@@ -1,0 +1,6 @@
+{
+  "spades": { "symbol": "♠", "accentTheme": "black", "color": "#111827" },
+  "hearts": { "symbol": "♥", "accentTheme": "red", "color": "#dc2626" },
+  "diamonds": { "symbol": "♦", "accentTheme": "red", "color": "#dc2626" },
+  "clubs": { "symbol": "♣", "accentTheme": "black", "color": "#111827" }
+}

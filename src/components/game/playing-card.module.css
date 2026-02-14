@@ -1,0 +1,82 @@
+.card {
+  perspective: 920px;
+  position: relative;
+  border-radius: 0.75rem;
+  animation: deal-in 220ms ease-out;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 0.95rem;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--card-border), transparent 75%);
+}
+
+.card[data-accent="red"]::after {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--card-red), transparent 78%),
+    0 0 18px color-mix(in srgb, var(--card-red), transparent 90%);
+}
+
+.card[data-accent="black"]::after {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--card-black), transparent 80%),
+    0 0 16px color-mix(in srgb, var(--card-back-accent), transparent 92%);
+}
+
+.cardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 180ms ease;
+}
+
+.faceUp .cardInner {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  backface-visibility: hidden;
+  object-fit: cover;
+  user-select: none;
+  border: 1px solid var(--card-border);
+}
+
+.front {
+  transform: rotateY(180deg);
+  background: var(--card-bg);
+}
+
+.back {
+  background: color-mix(in srgb, var(--card-back-accent), #001f1d 70%);
+}
+
+@keyframes deal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+
+  .cardInner {
+    transition: none;
+  }
+}
