@@ -131,11 +131,24 @@ export interface JoinRoomResponse {
 export interface SeatRequest {
   token: string;
   seatNo: number;
-  buyIn: number;
 }
 
 export interface StartHandRequest {
   token: string;
+}
+
+export interface RechargePlayerRequest {
+  token: string;
+  playerId: string;
+  amount: number;
+}
+
+export interface BasicOkResponse {
+  ok: true;
+}
+
+export interface ErrorResponse {
+  error: string;
 }
 
 export interface PlayerActionRequest {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { startHand } from "@/lib/client/api";
+import { rechargePlayer, startHand } from "@/lib/client/api";
 import { getHostToken } from "@/lib/client/tokens";
 import { useRoomSnapshot } from "@/lib/client/use-room-snapshot";
 import { useLanguage } from "@/components/i18n/language-provider";
@@ -12,11 +12,26 @@ interface HostRoomClientProps {
   roomCode: string;
 }
 
+const RECHARGE_STEP = 5;
+
+function normalizeRechargeInput(rawValue: string): string {
+  const parsed = Math.floor(Number(rawValue));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return String(RECHARGE_STEP);
+  }
+
+  const snapped = Math.round(parsed / RECHARGE_STEP) * RECHARGE_STEP;
+  return String(Math.max(RECHARGE_STEP, snapped));
+}
+
 export function HostRoomClient({ roomCode }: HostRoomClientProps) {
   const { t, language } = useLanguage();
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [rechargeBusyPlayerId, setRechargeBusyPlayerId] = useState<string | null>(null);
+  const [rechargeInputs, setRechargeInputs] = useState<Record<string, string>>({});
+  const [rechargeFeedback, setRechargeFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     setToken(getHostToken(roomCode));
@@ -63,9 +78,62 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
       await startHand(roomCode, token);
       await refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("host.startHandFailed"));
+      const message = caught instanceof Error ? caught.message : t("host.startHandFailed");
+      setError(
+        message === "All seated players must have chips before starting a hand"
+          ? t("host.startHandInvalidStack")
+          : message,
+      );
     } finally {
       setBusy(false);
+    }
+  };
+
+  const updateRechargeInput = (playerId: string, value: string) => {
+    setRechargeInputs((current) => ({
+      ...current,
+      [playerId]: value,
+    }));
+  };
+
+  const normalizeRechargeForPlayer = (playerId: string) => {
+    setRechargeInputs((current) => {
+      const normalized = normalizeRechargeInput(current[playerId] ?? "100");
+      if (current[playerId] === normalized) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [playerId]: normalized,
+      };
+    });
+  };
+
+  const onRecharge = async (playerId: string, displayName: string) => {
+    if (!token || !snapshot) {
+      return;
+    }
+
+    const normalizedAmount = Number(normalizeRechargeInput(rechargeInputs[playerId] ?? "100"));
+    updateRechargeInput(playerId, String(normalizedAmount));
+
+    setRechargeBusyPlayerId(playerId);
+    setError(null);
+    setRechargeFeedback(null);
+    try {
+      await rechargePlayer({
+        roomCode,
+        token,
+        playerId,
+        amount: normalizedAmount,
+      });
+      setRechargeFeedback(t("host.recharge.success", { player: displayName, amount: normalizedAmount }));
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("host.recharge.failed"));
+    } finally {
+      setRechargeBusyPlayerId(null);
     }
   };
 
@@ -146,6 +214,50 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
           </ul>
         </section>
       ) : null}
+
+      <section className={styles.panel}>
+        <h2>{t("host.recharge.title")}</h2>
+        {snapshot.status === "in_hand" ? <p className={styles.meta}>{t("host.recharge.disabledInHand")}</p> : null}
+        {snapshot.players.length === 0 ? <p className={styles.meta}>{t("host.recharge.empty")}</p> : null}
+
+        {snapshot.players.length > 0 ? (
+          <div className={styles.rechargeGrid}>
+            {snapshot.players.map((player) => (
+              <div key={player.playerId} className={styles.rechargeRow}>
+                <div className={styles.rechargeIdentity}>
+                  <strong>{player.displayName}</strong>
+                  <span className={styles.meta}>
+                    S{player.seatNo + 1} · {t("table.chips", { chips: player.stack })}
+                  </span>
+                </div>
+                <div className={styles.rechargeControls}>
+                  <label className={styles.rechargeLabel}>
+                    {t("host.recharge.amount")}
+                    <input
+                      type="number"
+                      min={RECHARGE_STEP}
+                      step={RECHARGE_STEP}
+                      value={rechargeInputs[player.playerId] ?? "100"}
+                      onChange={(event) => updateRechargeInput(player.playerId, event.target.value)}
+                      onBlur={() => normalizeRechargeForPlayer(player.playerId)}
+                      disabled={snapshot.status === "in_hand" || rechargeBusyPlayerId === player.playerId}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => onRecharge(player.playerId, player.displayName)}
+                    disabled={snapshot.status === "in_hand" || rechargeBusyPlayerId !== null}
+                  >
+                    {t("host.recharge.button")}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {rechargeFeedback ? <p className={styles.success}>{rechargeFeedback}</p> : null}
+      </section>
 
       <section className={styles.panel}>
         <h2>{t("host.actionLog")}</h2>

@@ -1,7 +1,9 @@
 import type {
+  BasicOkResponse,
   CreateRoomResponse,
   GameActionCommand,
   JoinRoomResponse,
+  RechargePlayerRequest,
   RoomSnapshot,
 } from "@/lib/protocol/types";
 
@@ -41,14 +43,13 @@ export async function seatPlayer(input: {
   roomCode: string;
   token: string;
   seatNo: number;
-  buyIn: number;
 }): Promise<void> {
   const response = await fetch(`/api/v1/rooms/${input.roomCode}/seat`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
   });
-  await parseResponse<{ ok: boolean }>(response);
+  await parseResponse<BasicOkResponse>(response);
 }
 
 export async function startHand(roomCode: string, token: string): Promise<void> {
@@ -57,7 +58,21 @@ export async function startHand(roomCode: string, token: string): Promise<void> 
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ token }),
   });
-  await parseResponse<{ ok: boolean }>(response);
+  await parseResponse<BasicOkResponse>(response);
+}
+
+export async function rechargePlayer(input: RechargePlayerRequest & { roomCode: string }): Promise<void> {
+  const response = await fetch(`/api/v1/rooms/${input.roomCode}/host/recharge`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      token: input.token,
+      playerId: input.playerId,
+      amount: input.amount,
+    }),
+  });
+
+  await parseResponse<BasicOkResponse>(response);
 }
 
 export async function postAction(input: {
@@ -71,7 +86,7 @@ export async function postAction(input: {
     body: JSON.stringify(input),
   });
 
-  await parseResponse<{ ok: boolean }>(response);
+  await parseResponse<BasicOkResponse>(response);
 }
 
 export async function fetchSnapshot(roomCode: string, token?: string): Promise<RoomSnapshot> {

@@ -62,7 +62,6 @@ function normalizeAmountOnBlur(
 export function PlayerRoomClient({ roomCode }: PlayerRoomClientProps) {
   const { t, language } = useLanguage();
   const [token, setToken] = useState<string | null>(null);
-  const [buyIn, setBuyIn] = useState(1000);
   const [amountInput, setAmountInput] = useState("0");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -220,7 +219,7 @@ export function PlayerRoomClient({ roomCode }: PlayerRoomClientProps) {
     setBusy(true);
     setError(null);
     try {
-      await seatPlayer({ roomCode, token, seatNo, buyIn });
+      await seatPlayer({ roomCode, token, seatNo });
       await refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("player.takeSeatFailed"));
@@ -281,17 +280,7 @@ export function PlayerRoomClient({ roomCode }: PlayerRoomClientProps) {
       {!mySeat ? (
         <section className={styles.panel}>
           <h2>{t("player.takeSeat")}</h2>
-          <label>
-            {t("player.buyIn")}
-            <input
-              type="number"
-              min={100}
-              max={20000}
-              step={50}
-              value={buyIn}
-              onChange={(event) => setBuyIn(Number(event.target.value))}
-            />
-          </label>
+          <p className={styles.meta}>{t("player.rechargeHint")}</p>
           <div className={styles.seatButtons}>
             {availableSeats.map((seatNo) => (
               <button key={seatNo} type="button" disabled={busy} onClick={() => onTakeSeat(seatNo)}>

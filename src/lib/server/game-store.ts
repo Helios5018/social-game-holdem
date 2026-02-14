@@ -86,9 +86,8 @@ const RANKS: CardRank[] = [
 const SUITS: CardSuit[] = ["spades", "hearts", "diamonds", "clubs"];
 const TABLE_SEATS = 9;
 const MAX_LOGS = 30;
-const MIN_BUY_IN = 100;
-const MAX_BUY_IN = 20000;
 const BET_STEP = 5;
+const RECHARGE_STEP = 5;
 
 type HandRank = {
   category: number;
@@ -121,14 +120,6 @@ function rankToValue(rank: CardRank): number {
 
 function generateRoomCode(): string {
   return crypto.randomBytes(3).toString("hex").toUpperCase();
-}
-
-function clampBuyIn(value: number): number {
-  if (!Number.isFinite(value)) {
-    return MIN_BUY_IN;
-  }
-
-  return Math.max(MIN_BUY_IN, Math.min(MAX_BUY_IN, Math.floor(value)));
 }
 
 function shuffleDeck(deck: Card[]): Card[] {
@@ -794,7 +785,7 @@ export class GameStore {
     };
   }
 
-  seatPlayer(roomCode: string, token: string, seatNo: number, buyIn: number): void {
+  seatPlayer(roomCode: string, token: string, seatNo: number): void {
     const room = this.getRoom(roomCode);
     const identity = decodeIdentity(token);
     const playerId = assertPlayer(identity, roomCode);
@@ -820,13 +811,42 @@ export class GameStore {
       room.seats[player.seatNo] = null;
     }
 
-    const stack = clampBuyIn(buyIn);
     player.seatNo = seatNo;
-    player.stack = stack;
     room.seats[seatNo] = playerId;
     room.version += 1;
 
-    addLog(room, `${player.displayName} sat at seat ${seatNo + 1} with ${stack} chips.`);
+    addLog(room, `${player.displayName} sat at seat ${seatNo + 1}.`);
+  }
+
+  rechargePlayer(roomCode: string, token: string, targetPlayerId: string, amount: number): void {
+    const room = this.getRoom(roomCode);
+    const identity = decodeIdentity(token);
+    assertHost(identity, roomCode);
+
+    if (room.status === "in_hand") {
+      throw new Error("Cannot recharge during active hand");
+    }
+
+    const target = room.players[targetPlayerId];
+    if (!target) {
+      throw new Error("Target player not found");
+    }
+
+    if (target.seatNo == null) {
+      throw new Error("Target player must be seated");
+    }
+
+    const rechargeAmount = Number.isFinite(amount) ? Math.floor(amount) : 0;
+    if (rechargeAmount <= 0) {
+      throw new Error("Recharge amount must be positive");
+    }
+    if (rechargeAmount % RECHARGE_STEP !== 0) {
+      throw new Error(`Recharge amount must be a multiple of ${RECHARGE_STEP}`);
+    }
+
+    target.stack += rechargeAmount;
+    room.version += 1;
+    addLog(room, `${target.displayName} recharged +${rechargeAmount} chips.`);
   }
 
   startHand(roomCode: string, token: string): void {
@@ -836,6 +856,12 @@ export class GameStore {
 
     if (room.status === "in_hand") {
       throw new Error("A hand is already in progress");
+    }
+
+    const seatedPlayerIds = room.seats.filter((playerId): playerId is string => Boolean(playerId));
+    const invalidSeated = seatedPlayerIds.filter((playerId) => (room.players[playerId]?.stack ?? 0) <= 0);
+    if (invalidSeated.length > 0) {
+      throw new Error("All seated players must have chips before starting a hand");
     }
 
     room.results = [];

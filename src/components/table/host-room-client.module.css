@@ -60,6 +60,78 @@
   margin-bottom: 0.5rem;
 }
 
+.meta {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.success {
+  margin-top: 0.5rem;
+  color: #86efac;
+  font-size: 0.84rem;
+}
+
+.rechargeGrid {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rechargeRow {
+  border: 1px solid rgba(157, 253, 236, 0.2);
+  border-radius: 0.75rem;
+  background: rgba(2, 22, 20, 0.74);
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rechargeIdentity {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.rechargeIdentity strong {
+  font-size: 0.9rem;
+}
+
+.rechargeControls {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rechargeLabel {
+  display: grid;
+  gap: 0.24rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.rechargeLabel input {
+  border-radius: 0.62rem;
+  border: 1px solid rgba(157, 253, 236, 0.32);
+  background: rgba(3, 24, 19, 0.9);
+  color: var(--text-main);
+  min-height: 42px;
+  min-width: 120px;
+  padding: 0.4rem 0.55rem;
+}
+
+.rechargeControls button {
+  border: none;
+  border-radius: 0.62rem;
+  background: linear-gradient(120deg, #22d3ee, #2dd4bf);
+  color: #032321;
+  font-weight: 700;
+  min-height: 42px;
+  padding: 0.42rem 0.72rem;
+}
+
+.rechargeControls button:disabled {
+  opacity: 0.5;
+}
+
 .panel ul {
   list-style: none;
   display: grid;
