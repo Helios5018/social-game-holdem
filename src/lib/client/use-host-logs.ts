@@ -31,7 +31,12 @@ function mergeUnique(
   return merged.slice(merged.length - MAX_UI_LOG_ITEMS);
 }
 
-export function useHostLogs(roomCode: string, token?: string, includeDebug = false) {
+export function useHostLogs(
+  roomCode: string,
+  token?: string,
+  includeDebug = false,
+  enabled = true,
+) {
   const [logs, setLogs] = useState<ServerLogEntry[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [allowDebug, setAllowDebug] = useState(false);
@@ -40,7 +45,7 @@ export function useHostLogs(roomCode: string, token?: string, includeDebug = fal
   const fetchingRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (!token || fetchingRef.current) {
+    if (!enabled || !token || fetchingRef.current) {
       return;
     }
 
@@ -66,18 +71,18 @@ export function useHostLogs(roomCode: string, token?: string, includeDebug = fal
       fetchingRef.current = false;
       setLoading(false);
     }
-  }, [cursor, includeDebug, roomCode, token]);
+  }, [cursor, enabled, includeDebug, roomCode, token]);
 
   useEffect(() => {
     setLogs([]);
     setCursor(null);
     setAllowDebug(false);
     setError(null);
-    setLoading(Boolean(token));
-  }, [roomCode, token, includeDebug]);
+    setLoading(Boolean(token && enabled));
+  }, [roomCode, token, includeDebug, enabled]);
 
   useEffect(() => {
-    if (!token) {
+    if (!enabled || !token) {
       setLoading(false);
       return;
     }
@@ -85,7 +90,7 @@ export function useHostLogs(roomCode: string, token?: string, includeDebug = fal
     refresh();
     const timer = setInterval(refresh, 1200);
     return () => clearInterval(timer);
-  }, [refresh, token]);
+  }, [refresh, token, enabled]);
 
   return useMemo(
     () => ({

@@ -16,10 +16,10 @@ interface HostRoomClientProps {
 
 const RECHARGE_STEP = 5;
 
-function normalizeRechargeInput(rawValue: string): string {
+function normalizeRechargeInput(rawValue: string, allowZero = true): string {
   const parsed = Math.floor(Number(rawValue));
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    return String(RECHARGE_STEP);
+    return allowZero ? "0" : String(RECHARGE_STEP);
   }
 
   const snapped = Math.round(parsed / RECHARGE_STEP) * RECHARGE_STEP;
@@ -100,7 +100,7 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
 
   const normalizeRechargeForPlayer = (playerId: string) => {
     setRechargeInputs((current) => {
-      const normalized = normalizeRechargeInput(current[playerId] ?? "100");
+      const normalized = normalizeRechargeInput(current[playerId] ?? "0", true);
       if (current[playerId] === normalized) {
         return current;
       }
@@ -117,8 +117,13 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
       return;
     }
 
-    const normalizedAmount = Number(normalizeRechargeInput(rechargeInputs[playerId] ?? "100"));
+    const normalizedAmount = Number(normalizeRechargeInput(rechargeInputs[playerId] ?? "0", true));
     updateRechargeInput(playerId, String(normalizedAmount));
+    if (normalizedAmount <= 0) {
+      setError(t("host.recharge.amountRequired"));
+      setRechargeFeedback(null);
+      return;
+    }
 
     setRechargeBusyPlayerId(playerId);
     setError(null);
@@ -130,6 +135,7 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
         playerId,
         amount: normalizedAmount,
       });
+      updateRechargeInput(playerId, "0");
       setRechargeFeedback(t("host.recharge.success", { player: displayName, amount: normalizedAmount }));
       await refresh();
     } catch (caught) {
@@ -243,9 +249,9 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
                     {t("host.recharge.amount")}
                     <input
                       type="number"
-                      min={RECHARGE_STEP}
+                      min={0}
                       step={RECHARGE_STEP}
-                      value={rechargeInputs[player.playerId] ?? "100"}
+                      value={rechargeInputs[player.playerId] ?? "0"}
                       onChange={(event) => updateRechargeInput(player.playerId, event.target.value)}
                       onBlur={() => normalizeRechargeForPlayer(player.playerId)}
                       disabled={snapshot.status === "in_hand" || rechargeBusyPlayerId === player.playerId}
@@ -267,8 +273,6 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
         {rechargeFeedback ? <p className={styles.success}>{rechargeFeedback}</p> : null}
       </section>
 
-      <HostSystemLogPanel roomCode={snapshot.roomCode} token={token} />
-
       <section className={styles.panel}>
         <h2>{t("host.actionLog")}</h2>
         <ul>
@@ -277,6 +281,8 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
           ))}
         </ul>
       </section>
+
+      <HostSystemLogPanel roomCode={snapshot.roomCode} token={token} />
     </main>
   );
 }

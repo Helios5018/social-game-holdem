@@ -19,6 +19,22 @@
   font-size: 1rem;
 }
 
+.collapseButton {
+  border: 1px solid rgba(103, 232, 249, 0.44);
+  border-radius: 0.62rem;
+  background: rgba(3, 26, 23, 0.85);
+  color: #a5f3fc;
+  min-height: 34px;
+  padding: 0.32rem 0.7rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.collapseButton:hover {
+  border-color: rgba(45, 212, 191, 0.78);
+}
+
 .controls {
   display: flex;
   align-items: center;

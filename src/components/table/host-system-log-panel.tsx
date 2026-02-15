@@ -54,17 +54,23 @@ function metaAsLine(entry: ServerLogEntry): string | null {
 
 export function HostSystemLogPanel({ roomCode, token }: HostSystemLogPanelProps) {
   const { t, language } = useLanguage();
+  const [expanded, setExpanded] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [showDebug, setShowDebug] = useState(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const { logs, allowDebug, loading, error } = useHostLogs(roomCode, token, showDebug);
+  const { logs, allowDebug, loading, error } = useHostLogs(
+    roomCode,
+    token,
+    showDebug,
+    expanded,
+  );
 
   useEffect(() => {
-    if (!autoScroll || !scrollerRef.current) {
+    if (!expanded || !autoScroll || !scrollerRef.current) {
       return;
     }
     scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
-  }, [logs, autoScroll]);
+  }, [expanded, logs, autoScroll]);
 
   useEffect(() => {
     if (!allowDebug && showDebug) {
@@ -85,49 +91,63 @@ export function HostSystemLogPanel({ roomCode, token }: HostSystemLogPanelProps)
     <section className={styles.panel}>
       <div className={styles.header}>
         <h2>{t("host.systemLog.title")}</h2>
-        <div className={styles.controls}>
-          <label className={styles.toggle}>
-            <input
-              type="checkbox"
-              checked={autoScroll}
-              onChange={(event) => setAutoScroll(event.target.checked)}
-            />
-            {t("host.systemLog.autoScroll")}
-          </label>
-          {allowDebug ? (
+        <button
+          type="button"
+          className={styles.collapseButton}
+          onClick={() => setExpanded((current) => !current)}
+          aria-expanded={expanded}
+        >
+          {expanded ? t("host.systemLog.collapse") : t("host.systemLog.expand")}
+        </button>
+      </div>
+
+      {!expanded ? <p className={styles.meta}>{t("host.systemLog.collapsedHint")}</p> : null}
+      {!expanded ? null : (
+        <>
+          <div className={styles.controls}>
             <label className={styles.toggle}>
               <input
                 type="checkbox"
-                checked={showDebug}
-                onChange={(event) => setShowDebug(event.target.checked)}
+                checked={autoScroll}
+                onChange={(event) => setAutoScroll(event.target.checked)}
               />
-              {t("host.systemLog.showDebug")}
+              {t("host.systemLog.autoScroll")}
             </label>
-          ) : null}
-        </div>
-      </div>
+            {allowDebug ? (
+              <label className={styles.toggle}>
+                <input
+                  type="checkbox"
+                  checked={showDebug}
+                  onChange={(event) => setShowDebug(event.target.checked)}
+                />
+                {t("host.systemLog.showDebug")}
+              </label>
+            ) : null}
+          </div>
 
-      {error ? <p className={styles.error}>{error}</p> : null}
-      {loading && rows.length === 0 ? <p className={styles.meta}>{t("host.loading")}</p> : null}
+          {error ? <p className={styles.error}>{error}</p> : null}
+          {loading && rows.length === 0 ? <p className={styles.meta}>{t("host.loading")}</p> : null}
 
-      <div className={styles.list} ref={scrollerRef}>
-        {rows.length === 0 ? <p className={styles.meta}>{t("host.systemLog.empty")}</p> : null}
-        {rows.map((entry) => (
-          <article key={entry.id} className={styles.item}>
-            <div className={styles.itemTop}>
-              <span className={`${styles.level} ${levelClass(entry.level)}`}>
-                {t("host.systemLog.level", { level: entry.level.toUpperCase() })}
-              </span>
-              <span className={styles.scope}>
-                {t("host.systemLog.scope", { scope: entry.scope })}
-              </span>
-              <time className={styles.time}>{formatTimestamp(entry.ts, language)}</time>
-            </div>
-            <p className={styles.message}>{entry.message}</p>
-            {entry.metaLine ? <p className={styles.detail}>{entry.metaLine}</p> : null}
-          </article>
-        ))}
-      </div>
+          <div className={styles.list} ref={scrollerRef}>
+            {rows.length === 0 ? <p className={styles.meta}>{t("host.systemLog.empty")}</p> : null}
+            {rows.map((entry) => (
+              <article key={entry.id} className={styles.item}>
+                <div className={styles.itemTop}>
+                  <span className={`${styles.level} ${levelClass(entry.level)}`}>
+                    {t("host.systemLog.level", { level: entry.level.toUpperCase() })}
+                  </span>
+                  <span className={styles.scope}>
+                    {t("host.systemLog.scope", { scope: entry.scope })}
+                  </span>
+                  <time className={styles.time}>{formatTimestamp(entry.ts, language)}</time>
+                </div>
+                <p className={styles.message}>{entry.message}</p>
+                {entry.metaLine ? <p className={styles.detail}>{entry.metaLine}</p> : null}
+              </article>
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }
