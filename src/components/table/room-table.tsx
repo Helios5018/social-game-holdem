@@ -90,7 +90,12 @@ export function RoomTable({
                   ) : null}
                   <span className={styles.name}>{player.displayName}</span>
                 </span>
-                <span className={styles.meta}>S{player.seatNo + 1}</span>
+                <span className={styles.headerMeta}>
+                  <span className={styles.meta}>S{player.seatNo + 1}</span>
+                  {!player.isConnected ? (
+                    <span className={styles.offlinePill}>{t("table.offline")}</span>
+                  ) : null}
+                </span>
               </header>
               <p className={styles.tags}>{seatLabel(player)}</p>
               <p className={styles.stack}>{t("table.chips", { chips: player.stack })}</p>
@@ -125,7 +130,9 @@ export function RoomTable({
                   ? t("table.folded")
                   : player.allIn
                     ? t("table.allIn")
-                    : player.isTurn
+                    : player.isTurn && !player.isConnected
+                      ? t("table.waitingReconnect")
+                      : player.isTurn
                       ? t("table.acting")
                       : player.inHand
                         ? t("table.inHand")

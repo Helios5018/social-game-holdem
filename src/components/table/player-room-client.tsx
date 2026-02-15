@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { postAction, seatPlayer } from "@/lib/client/api";
 import { getPlayerToken } from "@/lib/client/tokens";
+import { usePresencePing } from "@/lib/client/use-presence-ping";
 import { useRoomSnapshot } from "@/lib/client/use-room-snapshot";
 import { PlayingCard } from "@/components/game/playing-card";
 import type { GameActionType } from "@/lib/protocol/types";
@@ -71,6 +72,8 @@ export function PlayerRoomClient({ roomCode }: PlayerRoomClientProps) {
   useEffect(() => {
     setToken(getPlayerToken(roomCode));
   }, [roomCode]);
+
+  usePresencePing(roomCode, token ?? undefined);
 
   const { snapshot, loading, refresh, error: fetchError } = useRoomSnapshot(roomCode, token ?? undefined);
 

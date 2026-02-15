@@ -4,6 +4,7 @@ import type {
   GameActionCommand,
   HostLogsResponse,
   JoinRoomResponse,
+  PresencePingResponse,
   RechargePlayerRequest,
   RoomSnapshot,
 } from "@/lib/protocol/types";
@@ -124,4 +125,17 @@ export async function fetchHostLogs(input: {
   });
 
   return parseResponse<HostLogsResponse>(response);
+}
+
+export async function pingPresence(input: {
+  roomCode: string;
+  token: string;
+}): Promise<PresencePingResponse> {
+  const response = await fetch(`/api/v1/rooms/${input.roomCode}/presence/ping`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token: input.token }),
+  });
+
+  return parseResponse<PresencePingResponse>(response);
 }

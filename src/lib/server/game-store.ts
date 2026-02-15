@@ -22,6 +22,7 @@ interface RoomPlayer {
   seatNo: number | null;
   stack: number;
   connectedAt: number;
+  lastSeenAt: number;
 }
 
 interface HandState {
@@ -91,6 +92,7 @@ const TABLE_SEATS = 9;
 const MAX_LOGS = 30;
 const BET_STEP = 5;
 const RECHARGE_STEP = 5;
+const OFFLINE_THRESHOLD_MS = 8_000;
 const ROOM_CODE_LENGTH = 4;
 const ROOM_CODE_SPACE = 10 ** ROOM_CODE_LENGTH;
 const ROOM_CODE_PATTERN = /^\d{4}$/;
@@ -107,6 +109,10 @@ function nextId(prefix: string): string {
 
 function now(): number {
   return Date.now();
+}
+
+function isConnected(lastSeenAt: number, nowTs: number): boolean {
+  return nowTs - lastSeenAt <= OFFLINE_THRESHOLD_MS;
 }
 
 function rankToValue(rank: CardRank): number {
@@ -773,6 +779,7 @@ export class GameStore {
       seatNo: null,
       stack: 0,
       connectedAt: now(),
+      lastSeenAt: now(),
     };
 
     const room: RoomState = {
@@ -846,6 +853,7 @@ export class GameStore {
       seatNo: null,
       stack: 0,
       connectedAt: now(),
+      lastSeenAt: now(),
     };
 
     room.version += 1;
@@ -874,6 +882,7 @@ export class GameStore {
     const room = this.getRoom(roomCode);
     const identity = decodeIdentity(token);
     const playerId = assertPlayer(identity, roomCode);
+    this.touchPlayerPresence(room, playerId);
 
     if (!Number.isInteger(seatNo) || seatNo < 0 || seatNo >= TABLE_SEATS) {
       throw new Error("Invalid seat number");
@@ -912,6 +921,11 @@ export class GameStore {
     const room = this.getRoom(roomCode);
     const identity = decodeIdentity(token);
     assertHost(identity, roomCode);
+    const hostPlayerId = identity.payload.playerId;
+    if (!hostPlayerId) {
+      throw new Error("Invalid host token");
+    }
+    this.touchPlayerPresence(room, hostPlayerId);
 
     if (room.status === "in_hand") {
       throw new Error("Cannot recharge during active hand");
@@ -950,6 +964,11 @@ export class GameStore {
     const room = this.getRoom(roomCode);
     const identity = decodeIdentity(token);
     assertHost(identity, roomCode);
+    const hostPlayerId = identity.payload.playerId;
+    if (!hostPlayerId) {
+      throw new Error("Invalid host token");
+    }
+    this.touchPlayerPresence(room, hostPlayerId);
 
     if (room.status === "in_hand") {
       throw new Error("A hand is already in progress");
@@ -1082,6 +1101,7 @@ export class GameStore {
     const room = this.getRoom(roomCode);
     const identity = decodeIdentity(token);
     const playerId = assertPlayer(identity, roomCode);
+    this.touchPlayerPresence(room, playerId);
 
     const hand = room.hand;
     if (!hand || room.status !== "in_hand") {
@@ -1249,6 +1269,7 @@ export class GameStore {
 
   getSnapshot(roomCode: string, token?: string): RoomSnapshot {
     const room = this.getRoom(roomCode);
+    const nowTs = now();
 
     let role: AuthRole | null = null;
     let viewerId: string | null = null;
@@ -1257,6 +1278,9 @@ export class GameStore {
       if (identity.payload.roomCode === roomCode) {
         role = identity.payload.role;
         viewerId = identity.payload.playerId ?? null;
+        if (viewerId) {
+          this.touchPlayerPresence(room, viewerId, nowTs);
+        }
       }
     }
 
@@ -1278,6 +1302,8 @@ export class GameStore {
           displayName: player.displayName,
           seatNo,
           stack: player.stack,
+          isConnected: isConnected(player.lastSeenAt, nowTs),
+          lastSeenAt: player.lastSeenAt,
           inHand,
           folded: hand ? hand.folded.has(playerId) : false,
           allIn: hand ? hand.allIn.has(playerId) : false,
@@ -1348,6 +1374,19 @@ export class GameStore {
     return seats;
   }
 
+  touchPresence(roomCode: string, token: string): number {
+    const room = this.getRoom(roomCode);
+    const identity = decodeIdentity(token);
+    if (identity.payload.roomCode !== room.roomCode) {
+      throw new Error("Token room mismatch");
+    }
+    const playerId = identity.payload.playerId;
+    if (!playerId) {
+      throw new Error("Invalid token");
+    }
+    return this.touchPlayerPresence(room, playerId);
+  }
+
   private computeAllowedActions(room: RoomState, playerId: string): AllowedActions {
     const hand = room.hand;
     if (!hand) {
@@ -1395,6 +1434,15 @@ export class GameStore {
       throw new Error("Room not found");
     }
     return room;
+  }
+
+  private touchPlayerPresence(room: RoomState, playerId: string, touchedAt = now()): number {
+    const player = room.players[playerId];
+    if (!player) {
+      throw new Error("Player not found");
+    }
+    player.lastSeenAt = touchedAt;
+    return touchedAt;
   }
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { rechargePlayer, startHand } from "@/lib/client/api";
 import { getHostToken } from "@/lib/client/tokens";
+import { usePresencePing } from "@/lib/client/use-presence-ping";
 import { useRoomSnapshot } from "@/lib/client/use-room-snapshot";
 import { useLanguage } from "@/components/i18n/language-provider";
 import { RoomTable } from "./room-table";
@@ -40,6 +41,8 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
   useEffect(() => {
     setToken(getHostToken(roomCode));
   }, [roomCode]);
+
+  usePresencePing(roomCode, token ?? undefined);
 
   const { snapshot, loading, refresh } = useRoomSnapshot(roomCode, token ?? undefined);
 

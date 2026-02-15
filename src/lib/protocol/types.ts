@@ -53,6 +53,8 @@ export interface PlayerPublicState {
   displayName: string;
   seatNo: number;
   stack: number;
+  isConnected: boolean;
+  lastSeenAt: number;
   inHand: boolean;
   folded: boolean;
   allIn: boolean;
@@ -169,6 +171,15 @@ export interface ErrorResponse {
 export interface PlayerActionRequest {
   token: string;
   command: GameActionCommand;
+}
+
+export interface PresencePingRequest {
+  token: string;
+}
+
+export interface PresencePingResponse {
+  ok: true;
+  serverNow: number;
 }
 
 export type ServerLogLevel = "debug" | "info" | "warn" | "error";
