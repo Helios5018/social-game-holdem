@@ -58,12 +58,7 @@ export function HostSystemLogPanel({ roomCode, token }: HostSystemLogPanelProps)
   const [autoScroll, setAutoScroll] = useState(true);
   const [showDebug, setShowDebug] = useState(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const { logs, allowDebug, loading, error } = useHostLogs(
-    roomCode,
-    token,
-    showDebug,
-    expanded,
-  );
+  const { logs, allowDebug, loading, error } = useHostLogs(roomCode, token, showDebug);
 
   useEffect(() => {
     if (!expanded || !autoScroll || !scrollerRef.current) {

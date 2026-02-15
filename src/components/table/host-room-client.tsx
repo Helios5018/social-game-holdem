@@ -34,6 +34,8 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
   const [rechargeBusyPlayerId, setRechargeBusyPlayerId] = useState<string | null>(null);
   const [rechargeInputs, setRechargeInputs] = useState<Record<string, string>>({});
   const [rechargeFeedback, setRechargeFeedback] = useState<string | null>(null);
+  const [rechargeExpanded, setRechargeExpanded] = useState(false);
+  const [actionLogExpanded, setActionLogExpanded] = useState(false);
 
   useEffect(() => {
     setToken(getHostToken(roomCode));
@@ -230,56 +232,87 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
       ) : null}
 
       <section className={styles.panel}>
-        <h2>{t("host.recharge.title")}</h2>
-        {snapshot.status === "in_hand" ? <p className={styles.meta}>{t("host.recharge.disabledInHand")}</p> : null}
-        {snapshot.players.length === 0 ? <p className={styles.meta}>{t("host.recharge.empty")}</p> : null}
+        <div className={styles.panelHeaderRow}>
+          <h2>{t("host.recharge.title")}</h2>
+          <button
+            type="button"
+            className={styles.collapseButton}
+            onClick={() => setRechargeExpanded((current) => !current)}
+            aria-expanded={rechargeExpanded}
+          >
+            {rechargeExpanded ? t("host.section.collapse") : t("host.section.expand")}
+          </button>
+        </div>
 
-        {snapshot.players.length > 0 ? (
-          <div className={styles.rechargeGrid}>
-            {snapshot.players.map((player) => (
-              <div key={player.playerId} className={styles.rechargeRow}>
-                <div className={styles.rechargeIdentity}>
-                  <strong>{player.displayName}</strong>
-                  <span className={styles.meta}>
-                    S{player.seatNo + 1} · {t("table.chips", { chips: player.stack })}
-                  </span>
-                </div>
-                <div className={styles.rechargeControls}>
-                  <label className={styles.rechargeLabel}>
-                    {t("host.recharge.amount")}
-                    <input
-                      type="number"
-                      min={0}
-                      step={RECHARGE_STEP}
-                      value={rechargeInputs[player.playerId] ?? "0"}
-                      onChange={(event) => updateRechargeInput(player.playerId, event.target.value)}
-                      onBlur={() => normalizeRechargeForPlayer(player.playerId)}
-                      disabled={snapshot.status === "in_hand" || rechargeBusyPlayerId === player.playerId}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => onRecharge(player.playerId, player.displayName)}
-                    disabled={snapshot.status === "in_hand" || rechargeBusyPlayerId !== null}
-                  >
-                    {t("host.recharge.button")}
-                  </button>
-                </div>
+        {!rechargeExpanded ? <p className={styles.meta}>{t("host.recharge.collapsedHint")}</p> : null}
+        {!rechargeExpanded ? null : (
+          <>
+            {snapshot.status === "in_hand" ? (
+              <p className={styles.meta}>{t("host.recharge.disabledInHand")}</p>
+            ) : null}
+            {snapshot.players.length === 0 ? <p className={styles.meta}>{t("host.recharge.empty")}</p> : null}
+
+            {snapshot.players.length > 0 ? (
+              <div className={styles.rechargeGrid}>
+                {snapshot.players.map((player) => (
+                  <div key={player.playerId} className={styles.rechargeRow}>
+                    <div className={styles.rechargeIdentity}>
+                      <strong>{player.displayName}</strong>
+                      <span className={styles.meta}>
+                        S{player.seatNo + 1} · {t("table.chips", { chips: player.stack })}
+                      </span>
+                    </div>
+                    <div className={styles.rechargeControls}>
+                      <label className={styles.rechargeLabel}>
+                        {t("host.recharge.amount")}
+                        <input
+                          type="number"
+                          min={0}
+                          step={RECHARGE_STEP}
+                          value={rechargeInputs[player.playerId] ?? "0"}
+                          onChange={(event) => updateRechargeInput(player.playerId, event.target.value)}
+                          onBlur={() => normalizeRechargeForPlayer(player.playerId)}
+                          disabled={snapshot.status === "in_hand" || rechargeBusyPlayerId === player.playerId}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => onRecharge(player.playerId, player.displayName)}
+                        disabled={snapshot.status === "in_hand" || rechargeBusyPlayerId !== null}
+                      >
+                        {t("host.recharge.button")}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : null}
+            ) : null}
 
-        {rechargeFeedback ? <p className={styles.success}>{rechargeFeedback}</p> : null}
+            {rechargeFeedback ? <p className={styles.success}>{rechargeFeedback}</p> : null}
+          </>
+        )}
       </section>
 
       <section className={styles.panel}>
-        <h2>{t("host.actionLog")}</h2>
-        <ul>
-          {snapshot.actionLog.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
+        <div className={styles.panelHeaderRow}>
+          <h2>{t("host.actionLog")}</h2>
+          <button
+            type="button"
+            className={styles.collapseButton}
+            onClick={() => setActionLogExpanded((current) => !current)}
+            aria-expanded={actionLogExpanded}
+          >
+            {actionLogExpanded ? t("host.section.collapse") : t("host.section.expand")}
+          </button>
+        </div>
+        {!actionLogExpanded ? <p className={styles.meta}>{t("host.actionLog.collapsedHint")}</p> : null}
+        {!actionLogExpanded ? null : (
+          <ul>
+            {snapshot.actionLog.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <HostSystemLogPanel roomCode={snapshot.roomCode} token={token} />
