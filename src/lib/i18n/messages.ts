@@ -18,6 +18,9 @@ const en: Dictionary = {
   "lobby.joinButton": "Join as Player",
   "lobby.createFailed": "Failed to create room",
   "lobby.joinFailed": "Failed to join room",
+  "lobby.tutorialTitle": "Texas Hold'em Tutorial",
+  "lobby.tutorialSubtitle": "Learn the basic rules in 5 minutes before your first game.",
+  "lobby.tutorialFallback": "If the player does not load, open video in Bilibili",
 
   "host.title": "Host Console · {roomCode}",
   "host.tokenMissing": "Host token is missing in this browser. Create the room from lobby first.",
@@ -122,6 +125,9 @@ const zh: Dictionary = {
   "lobby.joinButton": "作为玩家加入",
   "lobby.createFailed": "创建房间失败",
   "lobby.joinFailed": "加入房间失败",
+  "lobby.tutorialTitle": "德州扑克教程视频",
+  "lobby.tutorialSubtitle": "开局前先看 5 分钟，快速掌握基础规则。",
+  "lobby.tutorialFallback": "若播放器未加载，可在 B 站打开视频",
 
   "host.title": "主持控制台 · {roomCode}",
   "host.tokenMissing": "当前浏览器缺少主持令牌，请先在大厅创建房间。",

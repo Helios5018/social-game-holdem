@@ -7,6 +7,11 @@ import { setHostToken, setPlayerToken } from "@/lib/client/tokens";
 import { useLanguage } from "@/components/i18n/language-provider";
 import styles from "./lobby-client.module.css";
 
+const HOLD_EM_TUTORIAL_URL =
+  "https://www.bilibili.com/video/BV1a94y1E7DT/?spm_id_from=333.337.search-card.all.click&vd_source=1bd43164f98f7ccbe05488f13604d342";
+const HOLD_EM_TUTORIAL_EMBED_URL =
+  "https://player.bilibili.com/player.html?bvid=BV1a94y1E7DT&page=1&high_quality=1&as_wide=1";
+
 export function LobbyClient() {
   const router = useRouter();
   const { t } = useLanguage();
@@ -119,6 +124,28 @@ export function LobbyClient() {
       </section>
 
       {error ? <p className={styles.error}>{error}</p> : null}
+
+      <section className={styles.tutorialPanel} aria-label={t("lobby.tutorialTitle")}>
+        <h2>{t("lobby.tutorialTitle")}</h2>
+        <p className={styles.tutorialSubtitle}>{t("lobby.tutorialSubtitle")}</p>
+        <div className={styles.videoFrame}>
+          <iframe
+            src={HOLD_EM_TUTORIAL_EMBED_URL}
+            title={t("lobby.tutorialTitle")}
+            loading="lazy"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+        <a
+          className={styles.tutorialLink}
+          href={HOLD_EM_TUTORIAL_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {t("lobby.tutorialFallback")}
+        </a>
+      </section>
     </main>
   );
 }
