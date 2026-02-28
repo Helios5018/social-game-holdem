@@ -92,9 +92,9 @@ export async function postAction(input: {
 }
 
 export async function fetchSnapshot(roomCode: string, token?: string): Promise<RoomSnapshot> {
-  const query = token ? `?token=${encodeURIComponent(token)}` : "";
-  const response = await fetch(`/api/v1/rooms/${roomCode}/snapshot${query}`, {
+  const response = await fetch(`/api/v1/rooms/${roomCode}/snapshot`, {
     cache: "no-store",
+    headers: token ? { authorization: `Bearer ${token}` } : undefined,
   });
 
   return parseResponse<RoomSnapshot>(response);
@@ -107,9 +107,7 @@ export async function fetchHostLogs(input: {
   limit?: number;
   includeDebug?: boolean;
 }): Promise<HostLogsResponse> {
-  const params = new URLSearchParams({
-    token: input.token,
-  });
+  const params = new URLSearchParams();
   if (input.since) {
     params.set("since", input.since);
   }
@@ -120,9 +118,14 @@ export async function fetchHostLogs(input: {
     params.set("includeDebug", "true");
   }
 
-  const response = await fetch(`/api/v1/rooms/${input.roomCode}/host/logs?${params.toString()}`, {
-    cache: "no-store",
-  });
+  const query = params.toString();
+  const response = await fetch(
+    `/api/v1/rooms/${input.roomCode}/host/logs${query ? `?${query}` : ""}`,
+    {
+      cache: "no-store",
+      headers: { authorization: `Bearer ${input.token}` },
+    },
+  );
 
   return parseResponse<HostLogsResponse>(response);
 }

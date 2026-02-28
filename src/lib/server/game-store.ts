@@ -6,61 +6,16 @@ import {
   type CardSuit,
   type GameActionCommand,
   type HandResult,
-  type PotBreakdownItem,
-  type PlayerPrivateState,
-  type PlayerPublicState,
   type RoomSnapshot,
   type ShowdownDetail,
   type Street,
 } from "@/lib/protocol/types";
 import { createToken, type AuthRole, type TokenPayload, verifyToken } from "./auth";
 import { logServer } from "./logger";
-
-interface RoomPlayer {
-  playerId: string;
-  displayName: string;
-  seatNo: number | null;
-  stack: number;
-  connectedAt: number;
-  lastSeenAt: number;
-}
-
-interface HandState {
-  handNo: number;
-  street: Street;
-  deck: Card[];
-  communityCards: Card[];
-  holeCards: Record<string, [Card, Card]>;
-  activePlayerIds: string[];
-  folded: Set<string>;
-  allIn: Set<string>;
-  contributionsTotal: Record<string, number>;
-  contributionsStreet: Record<string, number>;
-  currentBet: number;
-  minRaise: number;
-  toActPlayerId: string | null;
-  acted: Set<string>;
-  smallBlindSeat: number;
-  bigBlindSeat: number;
-}
-
-interface RoomState {
-  roomId: string;
-  roomCode: string;
-  hostPlayerId: string;
-  smallBlind: number;
-  bigBlind: number;
-  seats: Array<string | null>;
-  players: Record<string, RoomPlayer>;
-  dealerSeat: number | null;
-  status: "waiting" | "in_hand";
-  handNo: number;
-  hand: HandState | null;
-  version: number;
-  actionLog: string[];
-  results: HandResult[];
-  lastShowdown: ShowdownDetail | null;
-}
+import type { HandState, RoomPlayer, RoomState } from "./room-types";
+import { compareHandRank, evaluateSeven } from "@/lib/game/hand-evaluator";
+import { buildPotBreakdown } from "@/lib/game/pot-calculator";
+import { buildSnapshot } from "@/lib/game/snapshot-builder";
 
 interface DecodedIdentity {
   payload: TokenPayload;
@@ -92,16 +47,9 @@ const TABLE_SEATS = 9;
 const MAX_LOGS = 30;
 const BET_STEP = 5;
 const RECHARGE_STEP = 5;
-const OFFLINE_THRESHOLD_MS = 8_000;
 const ROOM_CODE_LENGTH = 4;
 const ROOM_CODE_SPACE = 10 ** ROOM_CODE_LENGTH;
 const ROOM_CODE_PATTERN = /^\d{4}$/;
-
-type HandRank = {
-  category: number;
-  kickers: number[];
-  label: string;
-};
 
 function nextId(prefix: string): string {
   return `${prefix}_${crypto.randomBytes(5).toString("hex")}`;
@@ -109,25 +57,6 @@ function nextId(prefix: string): string {
 
 function now(): number {
   return Date.now();
-}
-
-function isConnected(lastSeenAt: number, nowTs: number): boolean {
-  return nowTs - lastSeenAt <= OFFLINE_THRESHOLD_MS;
-}
-
-function rankToValue(rank: CardRank): number {
-  switch (rank) {
-    case "A":
-      return 14;
-    case "K":
-      return 13;
-    case "Q":
-      return 12;
-    case "J":
-      return 11;
-    default:
-      return Number(rank);
-  }
 }
 
 function generateRoomCode(): string {
@@ -162,163 +91,6 @@ function createDeck(): Card[] {
   }
 
   return shuffleDeck(deck);
-}
-
-function combinations<T>(items: T[], count: number): T[][] {
-  if (count === 0) {
-    return [[]];
-  }
-
-  if (items.length < count) {
-    return [];
-  }
-
-  if (items.length === count) {
-    return [items.slice()];
-  }
-
-  const [head, ...tail] = items;
-  const withHead = combinations(tail, count - 1).map((combo) => [head, ...combo]);
-  const withoutHead = combinations(tail, count);
-  return [...withHead, ...withoutHead];
-}
-
-function compareKickers(left: number[], right: number[]): number {
-  const size = Math.max(left.length, right.length);
-  for (let index = 0; index < size; index += 1) {
-    const lv = left[index] ?? 0;
-    const rv = right[index] ?? 0;
-    if (lv !== rv) {
-      return lv > rv ? 1 : -1;
-    }
-  }
-
-  return 0;
-}
-
-function compareHandRank(left: HandRank, right: HandRank): number {
-  if (left.category !== right.category) {
-    return left.category > right.category ? 1 : -1;
-  }
-
-  return compareKickers(left.kickers, right.kickers);
-}
-
-function evaluateFive(cards: Card[]): HandRank {
-  const values = cards.map((card) => rankToValue(card.rank)).sort((a, b) => b - a);
-  const suits = cards.map((card) => card.suit);
-  const isFlush = suits.every((suit) => suit === suits[0]);
-
-  const counts = new Map<number, number>();
-  for (const value of values) {
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-
-  const unique = Array.from(new Set(values)).sort((a, b) => b - a);
-  const wheel = [14, 5, 4, 3, 2];
-
-  let straightHigh = 0;
-  if (unique.length === 5) {
-    if (unique[0] - unique[4] === 4) {
-      straightHigh = unique[0];
-    } else if (unique.join(",") === wheel.join(",")) {
-      straightHigh = 5;
-    }
-  }
-
-  const grouped = Array.from(counts.entries()).sort((a, b) => {
-    if (a[1] !== b[1]) {
-      return b[1] - a[1];
-    }
-
-    return b[0] - a[0];
-  });
-
-  if (isFlush && straightHigh > 0) {
-    return {
-      category: 8,
-      kickers: [straightHigh],
-      label: straightHigh === 14 ? "Royal Flush" : "Straight Flush",
-    };
-  }
-
-  if (grouped[0][1] === 4) {
-    return {
-      category: 7,
-      kickers: [grouped[0][0], grouped[1][0]],
-      label: "Four of a Kind",
-    };
-  }
-
-  if (grouped[0][1] === 3 && grouped[1][1] === 2) {
-    return {
-      category: 6,
-      kickers: [grouped[0][0], grouped[1][0]],
-      label: "Full House",
-    };
-  }
-
-  if (isFlush) {
-    return {
-      category: 5,
-      kickers: values,
-      label: "Flush",
-    };
-  }
-
-  if (straightHigh > 0) {
-    return {
-      category: 4,
-      kickers: [straightHigh],
-      label: "Straight",
-    };
-  }
-
-  if (grouped[0][1] === 3) {
-    return {
-      category: 3,
-      kickers: [grouped[0][0], grouped[1][0], grouped[2][0]],
-      label: "Three of a Kind",
-    };
-  }
-
-  if (grouped[0][1] === 2 && grouped[1][1] === 2) {
-    const pairTop = Math.max(grouped[0][0], grouped[1][0]);
-    const pairLow = Math.min(grouped[0][0], grouped[1][0]);
-    return {
-      category: 2,
-      kickers: [pairTop, pairLow, grouped[2][0]],
-      label: "Two Pair",
-    };
-  }
-
-  if (grouped[0][1] === 2) {
-    const kickers = grouped.slice(1).map(([value]) => value).sort((a, b) => b - a);
-    return {
-      category: 1,
-      kickers: [grouped[0][0], ...kickers],
-      label: "One Pair",
-    };
-  }
-
-  return {
-    category: 0,
-    kickers: values,
-    label: "High Card",
-  };
-}
-
-function evaluateSeven(cards: Card[]): HandRank {
-  const fiveCardCombos = combinations(cards, 5);
-  let best = evaluateFive(fiveCardCombos[0]);
-  for (const combo of fiveCardCombos.slice(1)) {
-    const candidate = evaluateFive(combo);
-    if (compareHandRank(candidate, best) > 0) {
-      best = candidate;
-    }
-  }
-
-  return best;
 }
 
 function addLog(room: RoomState, line: string): void {
@@ -448,40 +220,6 @@ function remainingPlayers(hand: HandState): string[] {
   return hand.activePlayerIds.filter((playerId) => !hand.folded.has(playerId));
 }
 
-function buildPotBreakdown(
-  contributionsTotal: Record<string, number>,
-  activePlayerIds: string[],
-  folded: Set<string>,
-): PotBreakdownItem[] {
-  const levels = Array.from(new Set(Object.values(contributionsTotal).filter((value) => value > 0))).sort(
-    (a, b) => a - b,
-  );
-
-  const pots: PotBreakdownItem[] = [];
-  let previousLevel = 0;
-
-  for (let index = 0; index < levels.length; index += 1) {
-    const level = levels[index];
-    const contributors = activePlayerIds.filter((playerId) => contributionsTotal[playerId] >= level);
-    const amount = (level - previousLevel) * contributors.length;
-    const eligiblePlayerIds = contributors.filter((playerId) => !folded.has(playerId));
-
-    if (amount > 0 && eligiblePlayerIds.length > 0) {
-      pots.push({
-        potId: index === 0 ? "main-0" : `side-${index}`,
-        kind: index === 0 ? "main" : "side",
-        amount,
-        eligiblePlayerIds,
-        level,
-      });
-    }
-
-    previousLevel = level;
-  }
-
-  return pots;
-}
-
 function isRoundComplete(hand: HandState): boolean {
   const alive = remainingPlayers(hand);
   return alive.every((playerId) => {
@@ -596,7 +334,7 @@ function settleShowdown(room: RoomState): void {
 
   hand.street = "showdown";
 
-  const ranksByPlayer = new Map<string, HandRank>();
+  const ranksByPlayer = new Map<string, ReturnType<typeof evaluateSeven>>();
   for (const playerId of alive) {
     const cards = [...hand.holeCards[playerId], ...hand.communityCards];
     ranksByPlayer.set(playerId, evaluateSeven(cards));
@@ -608,7 +346,7 @@ function settleShowdown(room: RoomState): void {
 
   for (let index = 0; index < potBreakdown.length; index += 1) {
     const pot = potBreakdown[index];
-    let winningRank: HandRank | null = null;
+    let winningRank: ReturnType<typeof evaluateSeven> | null = null;
     let winners: string[] = [];
     for (const playerId of pot.eligiblePlayerIds) {
       const rank = ranksByPlayer.get(playerId);
@@ -1061,6 +799,7 @@ export class GameStore {
       acted: new Set<string>(),
       smallBlindSeat: sbSeat,
       bigBlindSeat: bbSeat,
+      processedActionIds: new Set<string>(),
     };
 
     postBlind(room, hand, sbPlayerId, room.smallBlind);
@@ -1120,6 +859,12 @@ export class GameStore {
     if (!player) {
       throw new Error("Player not found");
     }
+
+    // Idempotency: silently ignore duplicate action submissions (e.g. network retries).
+    if (hand.processedActionIds.has(command.actionId)) {
+      return;
+    }
+    hand.processedActionIds.add(command.actionId);
 
     const toCall = Math.max(0, hand.currentBet - hand.contributionsStreet[playerId]);
     const stackBefore = player.stack;
@@ -1273,94 +1018,27 @@ export class GameStore {
 
     let role: AuthRole | null = null;
     let viewerId: string | null = null;
+    let allowedActions = null;
+
     if (token) {
-      const identity = decodeIdentity(token);
-      if (identity.payload.roomCode === roomCode) {
-        role = identity.payload.role;
-        viewerId = identity.payload.playerId ?? null;
-        if (viewerId) {
-          this.touchPlayerPresence(room, viewerId, nowTs);
+      try {
+        const identity = decodeIdentity(token);
+        if (identity.payload.roomCode === roomCode) {
+          role = identity.payload.role;
+          viewerId = identity.payload.playerId ?? null;
+          if (viewerId) {
+            this.touchPlayerPresence(room, viewerId, nowTs);
+          }
+          if (role === "player" && viewerId && room.hand?.toActPlayerId === viewerId) {
+            allowedActions = this.computeAllowedActions(room, viewerId);
+          }
         }
+      } catch {
+        // Invalid token — treat as anonymous viewer.
       }
     }
 
-    const hand = room.hand;
-    const players: PlayerPublicState[] = room.seats
-      .map((playerId, seatNo) => {
-        if (!playerId) {
-          return null;
-        }
-
-        const player = room.players[playerId];
-        if (!player) {
-          return null;
-        }
-
-        const inHand = hand ? hand.activePlayerIds.includes(playerId) : false;
-        return {
-          playerId,
-          displayName: player.displayName,
-          seatNo,
-          stack: player.stack,
-          isConnected: isConnected(player.lastSeenAt, nowTs),
-          lastSeenAt: player.lastSeenAt,
-          inHand,
-          folded: hand ? hand.folded.has(playerId) : false,
-          allIn: hand ? hand.allIn.has(playerId) : false,
-          streetContribution: hand ? hand.contributionsStreet[playerId] ?? 0 : 0,
-          contribution: hand ? hand.contributionsTotal[playerId] ?? 0 : 0,
-          isDealer: room.dealerSeat === seatNo,
-          isSmallBlind: hand ? hand.smallBlindSeat === seatNo : false,
-          isBigBlind: hand ? hand.bigBlindSeat === seatNo : false,
-          isTurn: hand ? hand.toActPlayerId === playerId : false,
-        };
-      })
-      .filter((player): player is PlayerPublicState => Boolean(player));
-
-    const privateState: PlayerPrivateState | null =
-      viewerId && hand && hand.holeCards[viewerId]
-        ? {
-            holeCards:
-              role === "host" || viewerId === hand.toActPlayerId || hand.street === "showdown"
-                ? hand.holeCards[viewerId]
-                : hand.holeCards[viewerId],
-            allowedActions:
-              role === "player" && viewerId === hand.toActPlayerId
-                ? this.computeAllowedActions(room, viewerId)
-                : null,
-          }
-        : null;
-
-    const potBreakdown =
-      hand != null
-        ? buildPotBreakdown(hand.contributionsTotal, hand.activePlayerIds, hand.folded)
-        : [];
-    const totalPot = hand
-      ? Object.values(hand.contributionsTotal).reduce((sum, value) => sum + value, 0)
-      : 0;
-
-    return {
-      roomCode: room.roomCode,
-      smallBlind: room.smallBlind,
-      bigBlind: room.bigBlind,
-      status: room.status,
-      version: room.version,
-      handNo: room.handNo,
-      street: hand?.street ?? null,
-      pot: totalPot,
-      pots: potBreakdown,
-      hasSidePot: potBreakdown.some((item) => item.kind === "side"),
-      minRaise: hand?.minRaise ?? room.bigBlind,
-      currentBet: hand?.currentBet ?? 0,
-      dealerSeat: room.dealerSeat,
-      communityCards: hand?.communityCards ?? [],
-      players,
-      actionLog: room.actionLog,
-      results: room.results,
-      lastShowdown: room.lastShowdown,
-      yourPlayerId: viewerId,
-      yourPrivateState: privateState,
-    };
+    return buildSnapshot(room, viewerId, role, allowedActions, nowTs);
   }
 
   getAvailableSeats(roomCode: string): number[] {

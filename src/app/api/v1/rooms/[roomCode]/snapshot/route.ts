@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gameStore } from "@/lib/server/game-store";
+import { getBearerToken } from "@/lib/server/http";
 import { withApiLogging } from "@/lib/server/with-api-logging";
 
 export const runtime = "nodejs";
@@ -15,7 +16,7 @@ export const GET = withApiLogging(
   },
   async (request: NextRequest, { params }: { params: { roomCode: string } }) => {
     const roomCode = params.roomCode.toUpperCase();
-    const token = request.nextUrl.searchParams.get("token") ?? undefined;
+    const token = getBearerToken(request);
     const snapshot = gameStore.getSnapshot(roomCode, token);
     return NextResponse.json(snapshot);
   },
