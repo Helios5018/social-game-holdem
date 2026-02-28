@@ -1,10 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { rechargePlayer, startHand } from "@/lib/client/api";
+import {
+  addAiPlayer,
+  listAiPlayers,
+  rechargePlayer,
+  removeAiPlayer,
+  startHand,
+  updateAiPersonality,
+} from "@/lib/client/api";
 import { getHostToken } from "@/lib/client/tokens";
 import { usePresencePing } from "@/lib/client/use-presence-ping";
 import { useRoomSnapshot } from "@/lib/client/use-room-snapshot";
+import type { AiPlayerInfo } from "@/lib/protocol/types";
 import { useLanguage } from "@/components/i18n/language-provider";
 import { RoomTable } from "./room-table";
 import { HostSystemLogPanel } from "./host-system-log-panel";
@@ -17,6 +25,13 @@ interface HostRoomClientProps {
 
 const RECHARGE_STEP = 5;
 
+type PersonalityPreset = "aggressive" | "conservative" | "balanced" | "custom";
+
+interface PersonalityDraft {
+  preset: PersonalityPreset;
+  custom: string;
+}
+
 function normalizeRechargeInput(rawValue: string, allowZero = true): string {
   const parsed = Math.floor(Number(rawValue));
   if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -25,6 +40,28 @@ function normalizeRechargeInput(rawValue: string, allowZero = true): string {
 
   const snapped = Math.round(parsed / RECHARGE_STEP) * RECHARGE_STEP;
   return String(Math.max(RECHARGE_STEP, snapped));
+}
+
+function draftFromPersonality(personality: string): PersonalityDraft {
+  const normalized = personality.trim().toLowerCase();
+  if (normalized === "aggressive" || normalized === "conservative" || normalized === "balanced") {
+    return {
+      preset: normalized,
+      custom: "",
+    };
+  }
+
+  return {
+    preset: "custom",
+    custom: personality,
+  };
+}
+
+function resolveDraftPersonality(draft: PersonalityDraft): string {
+  if (draft.preset === "custom") {
+    return draft.custom.trim();
+  }
+  return draft.preset;
 }
 
 export function HostRoomClient({ roomCode }: HostRoomClientProps) {
@@ -37,6 +74,19 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
   const [rechargeFeedback, setRechargeFeedback] = useState<string | null>(null);
   const [rechargeExpanded, setRechargeExpanded] = useState(false);
   const [actionLogExpanded, setActionLogExpanded] = useState(false);
+
+  const [aiExpanded, setAiExpanded] = useState(false);
+  const [aiPlayers, setAiPlayers] = useState<AiPlayerInfo[]>([]);
+  const [aiDrafts, setAiDrafts] = useState<Record<string, PersonalityDraft>>({});
+  const [aiName, setAiName] = useState("AI");
+  const [aiPersonalityDraft, setAiPersonalityDraft] = useState<PersonalityDraft>({
+    preset: "balanced",
+    custom: "",
+  });
+  const [aiInitialChips, setAiInitialChips] = useState("500");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiRowBusyPlayerId, setAiRowBusyPlayerId] = useState<string | null>(null);
+  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     setToken(getHostToken(roomCode));
@@ -72,6 +122,30 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
 
     return street;
   };
+
+  const refreshAiPlayers = async (safeToken: string) => {
+    try {
+      const items = await listAiPlayers({ roomCode, token: safeToken });
+      setAiPlayers(items);
+      setAiDrafts((current) => {
+        const next: Record<string, PersonalityDraft> = {};
+        for (const item of items) {
+          next[item.playerId] = current[item.playerId] ?? draftFromPersonality(item.personality);
+        }
+        return next;
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("host.ai.loadFailed"));
+    }
+  };
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    void refreshAiPlayers(token);
+  }, [token, roomCode]);
 
   const onStartHand = async () => {
     if (!token) {
@@ -147,6 +221,123 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
       setError(caught instanceof Error ? caught.message : t("host.recharge.failed"));
     } finally {
       setRechargeBusyPlayerId(null);
+    }
+  };
+
+  const onAddAiPlayer = async () => {
+    if (!token || !snapshot) {
+      return;
+    }
+
+    if (snapshot.status === "in_hand") {
+      setError(t("host.ai.disabledInHand"));
+      return;
+    }
+
+    const personality = resolveDraftPersonality(aiPersonalityDraft);
+    if (!personality) {
+      setError(t("host.ai.customRequired"));
+      return;
+    }
+
+    const initialChips = Number(normalizeRechargeInput(aiInitialChips, false));
+    if (initialChips <= 0) {
+      setError(t("host.ai.chipsRequired"));
+      return;
+    }
+
+    setAiBusy(true);
+    setError(null);
+    setAiFeedback(null);
+
+    try {
+      await addAiPlayer({
+        roomCode,
+        token,
+        displayName: aiName.trim() || "AI",
+        personality,
+        initialChips,
+      });
+      setAiFeedback(t("host.ai.addSuccess"));
+      setAiName("AI");
+      setAiPersonalityDraft({ preset: "balanced", custom: "" });
+      setAiInitialChips("500");
+      await Promise.all([refreshAiPlayers(token), refresh()]);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("host.ai.addFailed"));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const updateAiDraft = (playerId: string, patch: Partial<PersonalityDraft>) => {
+    setAiDrafts((current) => ({
+      ...current,
+      [playerId]: {
+        ...(current[playerId] ?? { preset: "balanced", custom: "" }),
+        ...patch,
+      },
+    }));
+  };
+
+  const onUpdateAiPersonality = async (playerId: string) => {
+    if (!token) {
+      return;
+    }
+
+    const draft = aiDrafts[playerId] ?? { preset: "balanced", custom: "" };
+    const personality = resolveDraftPersonality(draft);
+    if (!personality) {
+      setError(t("host.ai.customRequired"));
+      return;
+    }
+
+    setAiRowBusyPlayerId(playerId);
+    setError(null);
+    setAiFeedback(null);
+    try {
+      const updated = await updateAiPersonality({
+        roomCode,
+        token,
+        playerId,
+        personality,
+      });
+      setAiPlayers((current) =>
+        current.map((item) => (item.playerId === playerId ? updated : item)),
+      );
+      setAiFeedback(t("host.ai.updateSuccess"));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("host.ai.updateFailed"));
+    } finally {
+      setAiRowBusyPlayerId(null);
+    }
+  };
+
+  const onRemoveAiPlayer = async (playerId: string) => {
+    if (!token || !snapshot) {
+      return;
+    }
+
+    if (snapshot.status === "in_hand") {
+      setError(t("host.ai.disabledInHand"));
+      return;
+    }
+
+    setAiRowBusyPlayerId(playerId);
+    setError(null);
+    setAiFeedback(null);
+    try {
+      await removeAiPlayer({
+        roomCode,
+        token,
+        playerId,
+      });
+      setAiFeedback(t("host.ai.removeSuccess"));
+      await Promise.all([refreshAiPlayers(token), refresh()]);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("host.ai.removeFailed"));
+    } finally {
+      setAiRowBusyPlayerId(null);
     }
   };
 
@@ -233,6 +424,175 @@ export function HostRoomClient({ roomCode }: HostRoomClientProps) {
           </ul>
         </section>
       ) : null}
+
+      <section className={styles.panel}>
+        <div className={styles.panelHeaderRow}>
+          <h2>{t("host.ai.title")}</h2>
+          <button
+            type="button"
+            className={styles.collapseButton}
+            onClick={() => setAiExpanded((current) => !current)}
+            aria-expanded={aiExpanded}
+          >
+            {aiExpanded ? t("host.section.collapse") : t("host.section.expand")}
+          </button>
+        </div>
+
+        {!aiExpanded ? <p className={styles.meta}>{t("host.ai.collapsedHint")}</p> : null}
+        {!aiExpanded ? null : (
+          <>
+            {snapshot.status === "in_hand" ? <p className={styles.meta}>{t("host.ai.disabledInHand")}</p> : null}
+
+            <div className={styles.aiCreateGrid}>
+              <label className={styles.rechargeLabel}>
+                {t("host.ai.name")}
+                <input
+                  type="text"
+                  value={aiName}
+                  onChange={(event) => setAiName(event.target.value)}
+                  disabled={snapshot.status === "in_hand" || aiBusy}
+                />
+              </label>
+
+              <label className={styles.rechargeLabel}>
+                {t("host.ai.personality")}
+                <select
+                  value={aiPersonalityDraft.preset}
+                  onChange={(event) =>
+                    setAiPersonalityDraft((current) => ({
+                      ...current,
+                      preset: event.target.value as PersonalityPreset,
+                    }))
+                  }
+                  disabled={snapshot.status === "in_hand" || aiBusy}
+                >
+                  <option value="aggressive">{t("host.ai.personality.aggressive")}</option>
+                  <option value="conservative">{t("host.ai.personality.conservative")}</option>
+                  <option value="balanced">{t("host.ai.personality.balanced")}</option>
+                  <option value="custom">{t("host.ai.personality.custom")}</option>
+                </select>
+              </label>
+
+              {aiPersonalityDraft.preset === "custom" ? (
+                <label className={styles.rechargeLabel}>
+                  {t("host.ai.customPersonality")}
+                  <input
+                    type="text"
+                    value={aiPersonalityDraft.custom}
+                    onChange={(event) =>
+                      setAiPersonalityDraft((current) => ({
+                        ...current,
+                        custom: event.target.value,
+                      }))
+                    }
+                    disabled={snapshot.status === "in_hand" || aiBusy}
+                  />
+                </label>
+              ) : null}
+
+              <label className={styles.rechargeLabel}>
+                {t("host.ai.initialChips")}
+                <input
+                  type="number"
+                  min={RECHARGE_STEP}
+                  step={RECHARGE_STEP}
+                  value={aiInitialChips}
+                  onChange={(event) => setAiInitialChips(event.target.value)}
+                  onBlur={() => setAiInitialChips((current) => normalizeRechargeInput(current, false))}
+                  disabled={snapshot.status === "in_hand" || aiBusy}
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={onAddAiPlayer}
+                className={styles.aiPrimaryButton}
+                disabled={snapshot.status === "in_hand" || aiBusy}
+              >
+                {t("host.ai.addButton")}
+              </button>
+            </div>
+
+            {aiPlayers.length === 0 ? <p className={styles.meta}>{t("host.ai.empty")}</p> : null}
+
+            {aiPlayers.length > 0 ? (
+              <div className={styles.rechargeGrid}>
+                {aiPlayers.map((player) => {
+                  const seated = snapshot.players.find((item) => item.playerId === player.playerId);
+                  const draft = aiDrafts[player.playerId] ?? draftFromPersonality(player.personality);
+                  const rowBusy = aiRowBusyPlayerId === player.playerId;
+
+                  return (
+                    <div key={player.playerId} className={styles.rechargeRow}>
+                      <div className={styles.rechargeIdentity}>
+                        <strong>{player.displayName}</strong>
+                        <span className={styles.meta}>
+                          {seated ? `S${seated.seatNo + 1} · ${t("table.chips", { chips: seated.stack })}` : "-"}
+                        </span>
+                      </div>
+
+                      <div className={styles.aiRowControls}>
+                        <label className={styles.rechargeLabel}>
+                          {t("host.ai.personality")}
+                          <select
+                            value={draft.preset}
+                            onChange={(event) =>
+                              updateAiDraft(player.playerId, {
+                                preset: event.target.value as PersonalityPreset,
+                              })
+                            }
+                            disabled={rowBusy}
+                          >
+                            <option value="aggressive">{t("host.ai.personality.aggressive")}</option>
+                            <option value="conservative">{t("host.ai.personality.conservative")}</option>
+                            <option value="balanced">{t("host.ai.personality.balanced")}</option>
+                            <option value="custom">{t("host.ai.personality.custom")}</option>
+                          </select>
+                        </label>
+
+                        {draft.preset === "custom" ? (
+                          <label className={styles.rechargeLabel}>
+                            {t("host.ai.customPersonality")}
+                            <input
+                              type="text"
+                              value={draft.custom}
+                              onChange={(event) =>
+                                updateAiDraft(player.playerId, {
+                                  custom: event.target.value,
+                                })
+                              }
+                              disabled={rowBusy}
+                            />
+                          </label>
+                        ) : null}
+
+                        <div className={styles.aiRowActions}>
+                          <button
+                            type="button"
+                            onClick={() => onUpdateAiPersonality(player.playerId)}
+                            disabled={rowBusy}
+                          >
+                            {t("host.ai.updateButton")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onRemoveAiPlayer(player.playerId)}
+                            disabled={rowBusy || snapshot.status === "in_hand"}
+                          >
+                            {t("host.ai.removeButton")}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {aiFeedback ? <p className={styles.success}>{aiFeedback}</p> : null}
+          </>
+        )}
+      </section>
 
       <section className={styles.panel}>
         <div className={styles.panelHeaderRow}>

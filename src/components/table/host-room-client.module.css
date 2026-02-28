@@ -146,6 +146,16 @@
   padding: 0.4rem 0.55rem;
 }
 
+.rechargeLabel select {
+  border-radius: 0.62rem;
+  border: 1px solid rgba(157, 253, 236, 0.32);
+  background: rgba(3, 24, 19, 0.9);
+  color: var(--text-main);
+  min-height: 42px;
+  min-width: 120px;
+  padding: 0.4rem 0.55rem;
+}
+
 .rechargeControls button {
   border: none;
   border-radius: 0.62rem;
@@ -157,6 +167,52 @@
 }
 
 .rechargeControls button:disabled {
+  opacity: 0.5;
+}
+
+.aiCreateGrid {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+}
+
+.aiPrimaryButton {
+  border: none;
+  border-radius: 0.62rem;
+  background: linear-gradient(120deg, #22d3ee, #2dd4bf);
+  color: #032321;
+  font-weight: 700;
+  min-height: 42px;
+  padding: 0.42rem 0.72rem;
+  justify-self: start;
+}
+
+.aiPrimaryButton:disabled {
+  opacity: 0.5;
+}
+
+.aiRowControls {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.aiRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aiRowActions button {
+  border: none;
+  border-radius: 0.62rem;
+  background: linear-gradient(120deg, #22d3ee, #2dd4bf);
+  color: #032321;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 0.4rem 0.72rem;
+}
+
+.aiRowActions button:disabled {
   opacity: 0.5;
 }
 

@@ -160,6 +160,36 @@ export interface RechargePlayerRequest {
   amount: number;
 }
 
+export interface AddAiPlayerRequest {
+  token: string;
+  displayName: string;
+  personality: string;
+  initialChips: number;
+}
+
+export interface AddAiPlayerResponse {
+  playerId: string;
+  displayName: string;
+  seatNo: number;
+  personality: string;
+}
+
+export interface AiPlayerInfo {
+  roomCode: string;
+  playerId: string;
+  displayName: string;
+  personality: string;
+}
+
+export interface ListAiPlayersResponse {
+  items: AiPlayerInfo[];
+}
+
+export interface UpdateAiPersonalityRequest {
+  token: string;
+  personality: string;
+}
+
 export interface BasicOkResponse {
   ok: true;
 }

@@ -1,12 +1,17 @@
 import type {
+  AddAiPlayerRequest,
+  AddAiPlayerResponse,
+  AiPlayerInfo,
   BasicOkResponse,
   CreateRoomResponse,
   GameActionCommand,
   HostLogsResponse,
   JoinRoomResponse,
+  ListAiPlayersResponse,
   PresencePingResponse,
   RechargePlayerRequest,
   RoomSnapshot,
+  UpdateAiPersonalityRequest,
 } from "@/lib/protocol/types";
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -141,4 +146,68 @@ export async function pingPresence(input: {
   });
 
   return parseResponse<PresencePingResponse>(response);
+}
+
+export async function addAiPlayer(
+  input: AddAiPlayerRequest & { roomCode: string },
+): Promise<AddAiPlayerResponse> {
+  const response = await fetch(`/api/v1/rooms/${input.roomCode}/host/ai-players`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      token: input.token,
+      displayName: input.displayName,
+      personality: input.personality,
+      initialChips: input.initialChips,
+    }),
+  });
+
+  return parseResponse<AddAiPlayerResponse>(response);
+}
+
+export async function listAiPlayers(input: {
+  roomCode: string;
+  token: string;
+}): Promise<AiPlayerInfo[]> {
+  const response = await fetch(`/api/v1/rooms/${input.roomCode}/host/ai-players`, {
+    cache: "no-store",
+    headers: { authorization: `Bearer ${input.token}` },
+  });
+
+  const data = await parseResponse<ListAiPlayersResponse>(response);
+  return data.items;
+}
+
+export async function updateAiPersonality(
+  input: UpdateAiPersonalityRequest & { roomCode: string; playerId: string },
+): Promise<AiPlayerInfo> {
+  const response = await fetch(
+    `/api/v1/rooms/${input.roomCode}/host/ai-players/${input.playerId}`,
+    {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        token: input.token,
+        personality: input.personality,
+      }),
+    },
+  );
+
+  return parseResponse<AiPlayerInfo>(response);
+}
+
+export async function removeAiPlayer(input: {
+  roomCode: string;
+  token: string;
+  playerId: string;
+}): Promise<void> {
+  const response = await fetch(`/api/v1/rooms/${input.roomCode}/host/ai-players/${input.playerId}`, {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      token: input.token,
+    }),
+  });
+
+  await parseResponse<BasicOkResponse>(response);
 }

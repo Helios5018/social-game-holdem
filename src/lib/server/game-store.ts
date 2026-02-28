@@ -51,6 +51,13 @@ const ROOM_CODE_LENGTH = 4;
 const ROOM_CODE_SPACE = 10 ** ROOM_CODE_LENGTH;
 const ROOM_CODE_PATTERN = /^\d{4}$/;
 
+export type AfterStateChangeHook = (room: RoomState) => void;
+let afterStateChangeHook: AfterStateChangeHook | null = null;
+
+export function setAfterStateChangeHook(hook: AfterStateChangeHook | null): void {
+  afterStateChangeHook = hook;
+}
+
 function nextId(prefix: string): string {
   return `${prefix}_${crypto.randomBytes(5).toString("hex")}`;
 }
@@ -698,6 +705,43 @@ export class GameStore {
     });
   }
 
+  removePlayer(roomCode: string, token: string, targetPlayerId: string): void {
+    const room = this.getRoom(roomCode);
+    const identity = decodeIdentity(token);
+    assertHost(identity, roomCode);
+    const hostPlayerId = identity.payload.playerId;
+    if (!hostPlayerId) {
+      throw new Error("Invalid host token");
+    }
+    this.touchPlayerPresence(room, hostPlayerId);
+
+    if (room.status !== "waiting") {
+      throw new Error("Cannot remove players during active hand");
+    }
+
+    if (targetPlayerId === room.hostPlayerId) {
+      throw new Error("Cannot remove host player");
+    }
+
+    const target = room.players[targetPlayerId];
+    if (!target) {
+      throw new Error("Target player not found");
+    }
+
+    if (target.seatNo != null) {
+      room.seats[target.seatNo] = null;
+    }
+
+    delete room.players[targetPlayerId];
+    room.version += 1;
+    addLog(room, `${target.displayName} removed from room.`);
+    logGameEvent(room, "info", "player_removed", "Player removed from room.", {
+      hostPlayerId,
+      targetPlayerId,
+      targetName: target.displayName,
+    });
+  }
+
   startHand(roomCode: string, token: string): void {
     const room = this.getRoom(roomCode);
     const identity = decodeIdentity(token);
@@ -833,6 +877,8 @@ export class GameStore {
     if (!hand.toActPlayerId) {
       runOutToRiver(room);
       settleShowdown(room);
+    } else if (room.status === "in_hand") {
+      afterStateChangeHook?.(room);
     }
   }
 
@@ -1010,6 +1056,7 @@ export class GameStore {
 
     room.version += 1;
     progressAfterAction(room, playerId);
+    afterStateChangeHook?.(room);
   }
 
   getSnapshot(roomCode: string, token?: string): RoomSnapshot {
@@ -1065,7 +1112,7 @@ export class GameStore {
     return this.touchPlayerPresence(room, playerId);
   }
 
-  private computeAllowedActions(room: RoomState, playerId: string): AllowedActions {
+  computeAllowedActions(room: RoomState, playerId: string): AllowedActions {
     const hand = room.hand;
     if (!hand) {
       return {
