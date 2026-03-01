@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { StartHandRequest } from "@/lib/protocol/types";
+import { ensureAiSchedulerConnected } from "@/lib/ai/ai-scheduler";
 import { gameStore } from "@/lib/server/game-store";
 import { readJson } from "@/lib/server/http";
 import { withApiLogging } from "@/lib/server/with-api-logging";
@@ -15,6 +16,7 @@ export const POST = withApiLogging(
   },
   async (request: NextRequest, { params }: { params: { roomCode: string } }) => {
     const body = await readJson<StartHandRequest>(request);
+    ensureAiSchedulerConnected();
     gameStore.startHand(params.roomCode.toUpperCase(), body.token);
     return NextResponse.json({ ok: true });
   },

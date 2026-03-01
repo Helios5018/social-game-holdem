@@ -36,7 +36,16 @@ export const PATCH = withApiLogging(
     const body = await readJson<UpdateAiPersonalityRequest>(request);
     assertHostToken(roomCode, body.token);
 
+    const previous = aiManager.getConfig(roomCode, params.playerId);
+    if (!previous) {
+      throw new Error("AI player not found");
+    }
+
     const next = aiManager.updatePersonality(roomCode, params.playerId, body.personality);
+    gameStore.appendActionLog(
+      roomCode,
+      `[AI管理] 已更新 ${next.displayName} 人设：${previous.personality} -> ${next.personality}`,
+    );
     const response: AiPlayerInfo = {
       roomCode: next.roomCode,
       playerId: next.playerId,
@@ -63,12 +72,14 @@ export const DELETE = withApiLogging(
     const body = await readJson<DeleteAiPlayerRequest>(request);
     assertHostToken(roomCode, body.token);
 
-    if (!aiManager.isAiPlayer(roomCode, params.playerId)) {
+    const config = aiManager.getConfig(roomCode, params.playerId);
+    if (!config) {
       throw new Error("AI player not found");
     }
 
     gameStore.removePlayer(roomCode, body.token, params.playerId);
     aiManager.unregister(roomCode, params.playerId);
+    gameStore.appendActionLog(roomCode, `[AI管理] 已移除 ${config.displayName}（${config.playerId}）`);
 
     const response: BasicOkResponse = { ok: true };
     return NextResponse.json(response);

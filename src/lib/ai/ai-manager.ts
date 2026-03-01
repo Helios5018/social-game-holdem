@@ -1,8 +1,16 @@
 import type { AiPlayerInfo } from "@/lib/protocol/types";
 import type { AiPlayerConfig } from "./ai-types";
 
+declare global {
+  // eslint-disable-next-line no-var
+  var __holdemAiRooms: Map<string, Map<string, AiPlayerConfig>> | undefined;
+}
+
+const sharedAiRooms = global.__holdemAiRooms ?? new Map<string, Map<string, AiPlayerConfig>>();
+global.__holdemAiRooms = sharedAiRooms;
+
 class AiManager {
-  private readonly rooms = new Map<string, Map<string, AiPlayerConfig>>();
+  private readonly rooms = sharedAiRooms;
 
   register(config: AiPlayerConfig): void {
     const roomCode = config.roomCode.toUpperCase();
@@ -33,6 +41,14 @@ class AiManager {
 
   getConfig(roomCode: string, playerId: string): AiPlayerConfig | null {
     return this.rooms.get(roomCode.toUpperCase())?.get(playerId) ?? null;
+  }
+
+  listAllConfigs(): AiPlayerConfig[] {
+    const items: AiPlayerConfig[] = [];
+    this.rooms.forEach((roomMap) => {
+      roomMap.forEach((config) => items.push(config));
+    });
+    return items;
   }
 
   listForRoom(roomCode: string): AiPlayerInfo[] {

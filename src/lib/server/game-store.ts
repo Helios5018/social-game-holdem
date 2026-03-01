@@ -52,10 +52,13 @@ const ROOM_CODE_SPACE = 10 ** ROOM_CODE_LENGTH;
 const ROOM_CODE_PATTERN = /^\d{4}$/;
 
 export type AfterStateChangeHook = (room: RoomState) => void;
-let afterStateChangeHook: AfterStateChangeHook | null = null;
+
+function getAfterStateChangeHook(): AfterStateChangeHook | null {
+  return global.__holdemAfterStateChangeHook ?? null;
+}
 
 export function setAfterStateChangeHook(hook: AfterStateChangeHook | null): void {
-  afterStateChangeHook = hook;
+  global.__holdemAfterStateChangeHook = hook ?? undefined;
 }
 
 function nextId(prefix: string): string {
@@ -447,8 +450,7 @@ function progressAfterAction(room: RoomState, lastActorId: string): void {
     }
 
     revealNextStreet(room);
-    const next = hand.toActPlayerId ? chooseNextActor(room, hand, hand.toActPlayerId) : null;
-    if (!next) {
+    if (!hand.toActPlayerId) {
       const aliveCanAct = remainingPlayers(hand).filter((playerId) => !hand.allIn.has(playerId));
       if (aliveCanAct.length === 0) {
         runOutToRiver(room);
@@ -456,8 +458,6 @@ function progressAfterAction(room: RoomState, lastActorId: string): void {
       }
       return;
     }
-
-    hand.toActPlayerId = next;
     return;
   }
 
@@ -878,7 +878,7 @@ export class GameStore {
       runOutToRiver(room);
       settleShowdown(room);
     } else if (room.status === "in_hand") {
-      afterStateChangeHook?.(room);
+      getAfterStateChangeHook()?.(room);
     }
   }
 
@@ -1056,7 +1056,7 @@ export class GameStore {
 
     room.version += 1;
     progressAfterAction(room, playerId);
-    afterStateChangeHook?.(room);
+    getAfterStateChangeHook()?.(room);
   }
 
   getSnapshot(roomCode: string, token?: string): RoomSnapshot {
@@ -1110,6 +1110,11 @@ export class GameStore {
       throw new Error("Invalid token");
     }
     return this.touchPlayerPresence(room, playerId);
+  }
+
+  appendActionLog(roomCode: string, line: string): void {
+    const room = this.getRoom(roomCode);
+    addLog(room, line);
   }
 
   computeAllowedActions(room: RoomState, playerId: string): AllowedActions {
@@ -1174,6 +1179,8 @@ export class GameStore {
 declare global {
   // eslint-disable-next-line no-var
   var __holdemStore: GameStore | undefined;
+  // eslint-disable-next-line no-var
+  var __holdemAfterStateChangeHook: AfterStateChangeHook | undefined;
 }
 
 export const gameStore = global.__holdemStore ?? new GameStore();

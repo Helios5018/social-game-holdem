@@ -87,6 +87,11 @@ export const POST = withApiLogging(
 
       const scheduler = await import("@/lib/ai/ai-scheduler");
       scheduler.ensureAiSchedulerConnected();
+
+      gameStore.appendActionLog(
+        roomCode,
+        `[AI管理] 已添加 ${actualDisplayName}（S${seatNo + 1}，初始筹码 ${initialChips}，人设：${personality}）`,
+      );
     } catch (error) {
       aiManager.unregister(roomCode, joined.playerId);
       try {

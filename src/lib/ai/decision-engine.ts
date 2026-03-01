@@ -9,6 +9,14 @@ const BET_STEP = 5;
 
 const ACTIONS: GameActionType[] = ["FOLD", "CHECK", "CALL", "BET", "RAISE", "ALL_IN"];
 
+export interface AiDecisionResult {
+  command: GameActionCommand;
+  source: "llm" | "fallback";
+  reasoning?: string;
+  durationMs: number;
+  error?: string;
+}
+
 function makeActionId(): string {
   return crypto.randomUUID();
 }
@@ -176,8 +184,8 @@ export async function makeDecision(
   playerId: string,
   config: AiPlayerConfig,
   allowedActions: AllowedActions,
-): Promise<GameActionCommand> {
-  let decision: AiDecision;
+): Promise<AiDecisionResult> {
+  const startedAt = Date.now();
 
   try {
     const systemPrompt = buildSystemPrompt(config);
@@ -190,14 +198,29 @@ export async function makeDecision(
     ]);
 
     const parsed = parseResponse(raw);
-    decision = sanitizeDecision(room, playerId, parsed, allowedActions);
-  } catch {
-    decision = fallbackDecision(allowedActions);
+    const decision = sanitizeDecision(room, playerId, parsed, allowedActions);
+    return {
+      command: {
+        actionId: makeActionId(),
+        type: decision.type,
+        amount: decision.amount,
+      },
+      source: "llm",
+      reasoning: decision.reasoning,
+      durationMs: Date.now() - startedAt,
+    };
+  } catch (error) {
+    const decision: AiDecision = fallbackDecision(allowedActions);
+    return {
+      command: {
+        actionId: makeActionId(),
+        type: decision.type,
+        amount: decision.amount,
+      },
+      source: "fallback",
+      reasoning: decision.reasoning,
+      durationMs: Date.now() - startedAt,
+      error: error instanceof Error ? error.message : "unknown_error",
+    };
   }
-
-  return {
-    actionId: makeActionId(),
-    type: decision.type,
-    amount: decision.amount,
-  };
 }
